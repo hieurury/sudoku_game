@@ -5,6 +5,9 @@ import { storeToRefs } from 'pinia';
 
 const gameStore = useGameStore();
 const { gameBoard, playerBoard, currentFocus, cellStatus } = storeToRefs(gameStore);
+const {
+    resetGame
+} = gameStore;
 
 onMounted(() => {
     gameStore.initGame();

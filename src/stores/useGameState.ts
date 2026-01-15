@@ -165,6 +165,9 @@ export const useGameStore = defineStore('game', {
         // Tạo game mới
         newGame() {
             this.generateBoard();
+            this.cellStatus = Array.from({ length: boardSize }, () => 
+                Array(boardSize).fill(true)
+            ) as Status;
 
             // Copy solution to game board
             this.gameBoard = this._solutionBoard.map(row => [...row]);
@@ -175,7 +178,6 @@ export const useGameStore = defineStore('game', {
                 const col = Math.floor(Math.random() * boardSize);
                 if (this.gameBoard[row]?.[col] !== 0) {
                     this.gameBoard[row]![col] = 0;
-                    // this.cellStatus[row]![col] = false;
                     nullCell--;
                 }
             }
