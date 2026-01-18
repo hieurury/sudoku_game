@@ -32,6 +32,12 @@ export const useGameStore = defineStore('game', {
                      // Bỏ qua ô trống
             if (currentValue === 0) continue;
 
+            //kiểm tra ô hiện tại đúng không
+            if(!this.checkCell(i, j, this.playerBoard[i]![j]!)) {
+                this.cellStatus[i]![j] = false;
+                continue; // Không cần kiểm tra thêm nếu ô hiện tại đã sai
+            }
+
             // Kiểm tra hàng ngang (cùng hàng i, khác cột)
             for (let col = 0; col < boardSize; col++) {
                 if (col !== j && this.playerBoard[i]?.[col] === currentValue) {
@@ -209,6 +215,12 @@ export const useGameStore = defineStore('game', {
             this.currentFocus = null;
         },
 
+        clearPlayerBoard() {
+            this.playerBoard = this.gameBoard.map(row => [...row]);
+            this.updateStatus();
+            this.saveGame();
+        },
+
         // Reset game
         resetGame(nullCell: number = 40) {
             localStorage.removeItem(STORAGE_KEY);
@@ -217,9 +229,9 @@ export const useGameStore = defineStore('game', {
         },
 
         // Khởi tạo game
-        initGame() {
+        initGame(nullCell: number = 40) {
             if (!this.loadGame()) {
-                this.newGame();
+                this.newGame(nullCell);
             }
         },
         isWin(): boolean {
