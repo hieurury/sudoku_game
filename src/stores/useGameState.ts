@@ -163,7 +163,7 @@ export const useGameStore = defineStore('game', {
         },
 
         // Tạo game mới
-        newGame() {
+        newGame(nullCell: number = 40) {
             this.generateBoard();
             this.cellStatus = Array.from({ length: boardSize }, () => 
                 Array(boardSize).fill(true)
@@ -172,7 +172,6 @@ export const useGameStore = defineStore('game', {
             // Copy solution to game board
             this.gameBoard = this._solutionBoard.map(row => [...row]);
 
-            let nullCell = 40;
             while (nullCell > 0) {
                 const row = Math.floor(Math.random() * boardSize);
                 const col = Math.floor(Math.random() * boardSize);
@@ -206,10 +205,15 @@ export const useGameStore = defineStore('game', {
             this.currentFocus = focus;
         },
 
+        clearFocus() {
+            this.currentFocus = null;
+        },
+
         // Reset game
-        resetGame() {
+        resetGame(nullCell: number = 40) {
             localStorage.removeItem(STORAGE_KEY);
-            this.newGame();
+            this.newGame(nullCell);
+            this.clearFocus();
         },
 
         // Khởi tạo game
@@ -218,5 +222,15 @@ export const useGameStore = defineStore('game', {
                 this.newGame();
             }
         },
+        isWin(): boolean {
+            for (let i = 0; i < boardSize; i++) {
+                for (let j = 0; j < boardSize; j++) {
+                    if (this.playerBoard[i]?.[j] !== this._solutionBoard[i]?.[j]) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
     },
 });

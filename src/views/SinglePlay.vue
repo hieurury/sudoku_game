@@ -1,13 +1,14 @@
 <script setup lang="ts">
-import { onMounted, watch } from 'vue';
+import { onMounted, watch, ref } from 'vue';
 import { useGameStore } from '../stores/useGameState';
 import { storeToRefs } from 'pinia';
+import Swal from 'sweetalert2';
 
 const gameStore = useGameStore();
 const { gameBoard, playerBoard, currentFocus, cellStatus } = storeToRefs(gameStore);
-const {
-    resetGame
-} = gameStore;
+
+
+const isWin = ref(false);
 
 onMounted(() => {
     gameStore.initGame();
@@ -21,7 +22,11 @@ function handleInput(e: InputEvent) {
         const value = Number(target.value) || 0;
         gameStore.updateCell(data.row, data.col, value);
     }
-    console.log(playerBoard.value);
+    // Check win condition
+    if (gameStore.isWin()) {
+        handleWin();
+    }
+    
 }
 
 function handleFocus(e: FocusEvent) {
@@ -31,6 +36,26 @@ function handleFocus(e: FocusEvent) {
         const data = JSON.parse(record);
         gameStore.setFocus(data);
     }
+}
+
+function resetFocus() {
+    gameStore.clearFocus();
+}
+
+function handleWin() {
+    Swal.fire({
+        title: 'Chúc mừng!',
+        text: 'Bạn đã chiến thắng! Chơi lại không?',
+        icon: 'success',
+        showCancelButton: true,
+        confirmButtonText: 'Chơi lại',
+        cancelButtonText: 'Thoát'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            resetFocus();
+            gameStore.resetGame(2);
+        }
+    }); 
 }
 
 // function handleValidate(currentFocus: object): boolean {
@@ -47,7 +72,7 @@ watch(currentFocus, (newVal) => {
 <template>
     <div class="flex flex-col justify-center items-center gap-4">
         <button
-            @click="gameStore.resetGame()"
+            @click="gameStore.resetGame(2)"
             class="px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700"
         >
             New Game
