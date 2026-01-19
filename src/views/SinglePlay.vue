@@ -4,15 +4,31 @@ import { useGameStore } from '../stores/useGameState';
 import { storeToRefs } from 'pinia';
 import Swal from 'sweetalert2';
 
+//components
+import Counter from '../components/ui/Counter.vue';
+import Button from '../components/ui/Button.vue';
+
 const gameStore = useGameStore();
 const { gameBoard, playerBoard, currentFocus, cellStatus } = storeToRefs(gameStore);
 
 
-const isWin = ref(false);
+// const isWin = ref<boolean>(false);
+const caninvalid = ref<number>(0);
+const inValidCount = ref<number>(0);
+const countProgress = ref<number>(0);
+const nullCells = 10;
 
 onMounted(() => {
     gameStore.initGame();
+    //nhận giá trị valid từ store
+    loadGameCounter();
 });
+
+function newGame() {
+    resetFocus();
+    gameStore.resetGame(nullCells);
+    loadGameCounter();
+}
 
 function handleInput(e: InputEvent) {
     const target = e.target as HTMLInputElement;
@@ -22,11 +38,17 @@ function handleInput(e: InputEvent) {
         const value = Number(target.value) || 0;
         gameStore.updateCell(data.row, data.col, value);
     }
+
+    // Cập nhật số lượt sai
+    loadGameCounter();
+
     // Check win condition
     if (gameStore.isWin()) {
         handleWin();
     }
-    
+    if (gameStore.isLose()) {
+        handleLose();
+    }
 }
 
 function handleFocus(e: FocusEvent) {
@@ -53,9 +75,33 @@ function handleWin() {
     }).then((result) => {
         if (result.isConfirmed) {
             resetFocus();
-            gameStore.resetGame(40);
+            gameStore.resetGame(nullCells);
+            loadGameCounter();
         }
     }); 
+}
+
+function handleLose() {
+    Swal.fire({
+        title: 'Thất bại!',
+        text: 'Bạn đã hết lượt sai! Chơi lại không?',
+        icon: 'error',
+        showCancelButton: true,
+        confirmButtonText: 'Chơi lại',
+        cancelButtonText: 'Thoát'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            resetFocus();
+            gameStore.resetGame(nullCells);
+            loadGameCounter();
+        }
+    }); 
+}
+
+function loadGameCounter() {
+    inValidCount.value = gameStore.getInvalidCount;
+    caninvalid.value = gameStore.getCanInvalid;
+    countProgress.value = gameStore.getGameProgress;
 }
 
 // function handleValidate(currentFocus: object): boolean {
@@ -70,8 +116,8 @@ watch(currentFocus, (newVal) => {
 </script>
 
 <template>
-    <div class="grid grid-cols-2 gap-4 p-4">
-        <div class="col-span-1 px-24">
+    <div class="grid lg:grid-cols-2 gap-4 p-4">
+        <div class="col-span-1 lg:px-24">
             <div v-if="gameBoard" class="grid grid-rows-9 border-2 border-emerald-700">
                 <div
                     class="row-span-1 grid grid-cols-9"
@@ -91,7 +137,7 @@ watch(currentFocus, (newVal) => {
                                     currentFocus &&
                                     (currentFocus.row === index || currentFocus.col === cellIndex),
                             },
-                            'col-span-1 text-4xl h-14 flex items-center border border-gray-300 justify-center text-center focus:outline-none',
+                            'col-span-1 lg:text-4xl text-3xl lg:h-14 flex items-center border border-gray-300 justify-center text-center focus:outline-none',
                             'focus:caret-transparent cursor-pointer focus:bg-gray-200',
                         ]"
                         :record="JSON.stringify({ row: index, col: cellIndex })"
@@ -106,18 +152,15 @@ watch(currentFocus, (newVal) => {
             </div>
         </div>
         <div class=" col-span-1">
-            <button
-                @click="gameStore.resetGame(40)"
-                class="px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700"
-            >
-                New Game
-            </button>
-            <button
-                @click="gameStore.clearPlayerBoard()"
-                class="px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700"
-            >
-                Clear Player Board
-            </button>
+            <div>
+                <h1 class="text-4xl uppercase font-semibold my-4">Thông tin ván đấu</h1>
+                <div class="flex items-center gap-2">
+                    <Counter theme="error" title="Lượt sai hiện tại" :count="inValidCount" :max="caninvalid" />
+                    <Counter theme="success" title="Tiến độ hiện tại" :count="Math.abs(countProgress - nullCells)" :max="nullCells"/>
+                </div>
+            </div>
+            <Button class="mt-6" @click="newGame">Trò chơi mới</Button>
+            <Button class="mt-4" @click="resetFocus">Xóa chọn ô</Button>
         </div>
 
         

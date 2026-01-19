@@ -15,6 +15,8 @@ export const useGameStore = defineStore('game', {
         cellStatus: Array.from({ length: boardSize }, () => 
             Array(boardSize).fill(true)
         ) as Status,
+        canInvalid: 3 as number,
+        invalidCount: 0 as number
     }),
 
     actions: {
@@ -76,6 +78,8 @@ export const useGameStore = defineStore('game', {
                 gameBoard: this.gameBoard,
                 playerBoard: this.playerBoard,
                 cellStatus: this.cellStatus,
+                canInvalid: this.canInvalid,
+                invalidCount: this.invalidCount
             };
             localStorage.setItem(STORAGE_KEY, JSON.stringify(gameState));
         },
@@ -90,6 +94,8 @@ export const useGameStore = defineStore('game', {
                     this.gameBoard = gameState.gameBoard;
                     this.playerBoard = gameState.playerBoard;
                     this.cellStatus = gameState.cellStatus;
+                    this.canInvalid = gameState.canInvalid;
+                    this.invalidCount = gameState.invalidCount;
                     return true;
                 } catch (e) {
                     console.error('Failed to load game:', e);
@@ -169,7 +175,7 @@ export const useGameStore = defineStore('game', {
         },
 
         // Tạo game mới
-        newGame(nullCell: number = 40) {
+        newGame(nullCell: number = 40, canInvalid: number = 3) {
             this.generateBoard();
             this.cellStatus = Array.from({ length: boardSize }, () => 
                 Array(boardSize).fill(true)
@@ -177,6 +183,8 @@ export const useGameStore = defineStore('game', {
 
             // Copy solution to game board
             this.gameBoard = this._solutionBoard.map(row => [...row]);
+            this.invalidCount = 0;
+            this.canInvalid = canInvalid;
 
             while (nullCell > 0) {
                 const row = Math.floor(Math.random() * boardSize);
@@ -200,6 +208,9 @@ export const useGameStore = defineStore('game', {
         // Cập nhật ô người chơi nhập
         updateCell(row: number, col: number, value: number) {
             this.playerBoard[row]![col] = value;
+            if(!this.checkCell(row, col, value) && value !== 0) {
+                this.invalidCount += 1;
+            }
 
             this.updateStatus();
 
@@ -222,16 +233,16 @@ export const useGameStore = defineStore('game', {
         },
 
         // Reset game
-        resetGame(nullCell: number = 40) {
+        resetGame(nullCell: number = 40, canInvalid: number = 3) {
             localStorage.removeItem(STORAGE_KEY);
-            this.newGame(nullCell);
+            this.newGame(nullCell, canInvalid);
             this.clearFocus();
         },
 
         // Khởi tạo game
-        initGame(nullCell: number = 40) {
+        initGame(nullCell: number = 40, canInvalid: number = 3) {
             if (!this.loadGame()) {
-                this.newGame(nullCell);
+                this.newGame(nullCell, canInvalid);
             }
         },
         isWin(): boolean {
@@ -243,6 +254,28 @@ export const useGameStore = defineStore('game', {
                 }
             }
             return true;
+        },
+        isLose(): boolean {
+            return this.invalidCount >= this.canInvalid;
         }
     },
+    getters: {
+        getInvalidCount(): number {
+            return this.invalidCount;
+        },
+        getCanInvalid(): number {
+            return this.canInvalid;
+        },
+        getGameProgress(): number {
+            let cell: number = 0;
+            for(let i = 0; i < boardSize; i++) {
+                for(let j = 0; j < boardSize; j++) {
+                    if(this.playerBoard[i]?.[j] !== this._solutionBoard[i]?.[j]) {
+                        cell++;                        
+                    }
+                }
+            }
+            return cell;
+        }
+    }
 });
