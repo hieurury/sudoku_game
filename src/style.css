@@ -1,4 +1,15 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&display=swap');
 @import "tailwindcss";
+:root {
+  /* Game fonts */
+  --font-display: 'Orbitron', monospace;
+  --font-body: 'Share Tech Mono', sans-serif;
+  
+  font-family: var(--font-body);
+  /* font-family: "Share Tech Mono", monospace; */
+  font-weight: 400;
+  font-style: normal;
+}
 
 
 /* nay cho dark mode */

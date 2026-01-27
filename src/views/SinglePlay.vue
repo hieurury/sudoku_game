@@ -1,15 +1,19 @@
 <script setup lang="ts">
 import { onMounted, watch, ref } from 'vue';
 import { useGameStore } from '../stores/useGameState';
+import { useGameFile } from '../stores/useGameFile';
 import { storeToRefs } from 'pinia';
 import Swal from 'sweetalert2';
 
 //components
 import Counter from '../components/ui/Counter.vue';
 import Button from '../components/ui/Button.vue';
+import Divider from '../components/ui/Divider.vue';
 
 const gameStore = useGameStore();
+const gameFile = useGameFile();
 const { gameBoard, playerBoard, currentFocus, cellStatus } = storeToRefs(gameStore);
+
 
 
 // const isWin = ref<boolean>(false);
@@ -61,7 +65,7 @@ function handleFocus(e: FocusEvent) {
 }
 
 function resetFocus() {
-    gameStore.clearFocus();
+    gameStore.clearPlayerBoard();
 }
 
 function handleWin() {
@@ -137,7 +141,7 @@ watch(currentFocus, (newVal) => {
                                     currentFocus &&
                                     (currentFocus.row === index || currentFocus.col === cellIndex),
                             },
-                            'col-span-1 lg:text-4xl text-3xl lg:h-14 flex items-center border border-gray-300 justify-center text-center focus:outline-none',
+                            'col-span-1 lg:text-4xl text-3xl lg:h-14 font-medium flex items-center border border-gray-300 justify-center text-center focus:outline-none',
                             'focus:caret-transparent cursor-pointer focus:bg-gray-200',
                         ]"
                         :record="JSON.stringify({ row: index, col: cellIndex })"
@@ -151,16 +155,19 @@ watch(currentFocus, (newVal) => {
                 </div>
             </div>
         </div>
-        <div class=" col-span-1">
+        <div class="col-span-1">
             <div>
-                <h1 class="text-4xl uppercase font-semibold my-4">Thông tin ván đấu</h1>
+                <h1 class="text-4xl uppercase font-semibold my-2">Battle information</h1>
                 <div class="flex items-center gap-2">
-                    <Counter theme="error" title="Lượt sai hiện tại" :count="inValidCount" :max="caninvalid" />
-                    <Counter theme="success" title="Tiến độ hiện tại" :count="Math.abs(countProgress - nullCells)" :max="nullCells"/>
+                    <Counter progress theme="error" title="Current wrong" :count="inValidCount" :max="caninvalid" />
+                    <Counter progress theme="success" title="Current progress" :count="Math.abs(countProgress - nullCells)" :max="nullCells"/>
                 </div>
             </div>
-            <Button class="mt-6" @click="newGame">Trò chơi mới</Button>
-            <Button class="mt-4" @click="resetFocus">Xóa chọn ô</Button>
+            <Divider title="control" type="default" />
+            <div class="flex flex-row gap-4 mt-4">
+                <Button class="uppercase font-medium" type="danger" @click="newGame">New game</Button>
+                <Button class="uppercase font-medium" type="warning" @click="resetFocus">Clear answer</Button>
+            </div>
         </div>
 
         

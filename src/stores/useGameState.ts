@@ -1,4 +1,7 @@
 import { defineStore } from 'pinia';
+import { useGameFile } from './useGameFile';
+
+const gameFile = useGameFile();
 
 const boardSize = 9;
 type Board = number[][];
@@ -81,6 +84,7 @@ export const useGameStore = defineStore('game', {
                 canInvalid: this.canInvalid,
                 invalidCount: this.invalidCount
             };
+            gameFile.saveGame(gameState);
             localStorage.setItem(STORAGE_KEY, JSON.stringify(gameState));
         },
 
