@@ -137,12 +137,12 @@ watch(currentFocus, (newVal) => {
                                 'border-b-2 border-b-emerald-700': [2, 5].includes(index),
                                 'text-red-500': cellStatus[index]?.[cellIndex] === false,
                                 // 'bg-red-200/20': cell == 0,
-                                'bg-gray-300/20':
+                                'bg-gray-400/90 dark:bg-gray-300/20':
                                     currentFocus &&
                                     (currentFocus.row === index || currentFocus.col === cellIndex),
                             },
                             'col-span-1 lg:text-4xl text-3xl lg:h-14 font-medium flex items-center border border-gray-300 justify-center text-center focus:outline-none',
-                            'focus:caret-transparent cursor-pointer focus:bg-gray-200',
+                            'focus:caret-transparent cursor-pointer dark:focus:bg-gray-200 dark:focus:text-black focus:text-gray-300 focus:bg-slate-800/90',
                         ]"
                         :record="JSON.stringify({ row: index, col: cellIndex })"
                         @input="handleInput($event)"

@@ -9,8 +9,11 @@
   /* font-family: "Share Tech Mono", monospace; */
   font-weight: 400;
   font-style: normal;
+  transition: all 0.3s ease-in-out;
 }
 
 
 /* nay cho dark mode */
 @custom-variant dark (&:where(.dark, .dark *));
+
+@apply dark:bg-slate-800/90 dark:text-gray-300;
