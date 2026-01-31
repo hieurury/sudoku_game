@@ -3,23 +3,31 @@ import { onMounted, watch, ref } from 'vue';
 import { useGameStore } from '../stores/useGameState';
 import { useGameFile } from '../stores/useGameFile';
 import { storeToRefs } from 'pinia';
-import Swal from 'sweetalert2';
+import { useRouter } from 'vue-router';
 
 //components
 import Counter from '../components/ui/Counter.vue';
 import Button from '../components/ui/Button.vue';
 import Divider from '../components/ui/Divider.vue';
+import Popup from '../components/ui/Popup.vue';
 
 const gameStore = useGameStore();
 const gameFile = useGameFile();
 const { gameBoard, playerBoard, currentFocus, cellStatus } = storeToRefs(gameStore);
-
+const router = useRouter();
 
 
 // const isWin = ref<boolean>(false);
 const caninvalid = ref<number>(0);
 const inValidCount = ref<number>(0);
 const countProgress = ref<number>(0);
+//popup control
+const popupVisible = ref<boolean>(false);
+const popupTitle = ref<string>('Title');
+const popupDescription = ref<string>('Description');
+const popupPositive = ref<() => void>(() => {});
+const popupNegative = ref<() => void>(() => {});
+//game settings
 const nullCells = 10;
 
 onMounted(() => {
@@ -32,6 +40,9 @@ function newGame() {
     resetFocus();
     gameStore.resetGame(nullCells);
     loadGameCounter();
+
+    //poup control
+    popupVisible.value = false;
 }
 
 function handleInput(e: InputEvent) {
@@ -69,37 +80,30 @@ function resetFocus() {
 }
 
 function handleWin() {
-    Swal.fire({
-        title: 'Chúc mừng!',
-        text: 'Bạn đã chiến thắng! Chơi lại không?',
-        icon: 'success',
-        showCancelButton: true,
-        confirmButtonText: 'Chơi lại',
-        cancelButtonText: 'Thoát'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            resetFocus();
-            gameStore.resetGame(nullCells);
-            loadGameCounter();
-        }
-    }); 
+    popupTitle.value = 'CONGRATULATIONS!';
+    popupDescription.value = 'Do yout want to play new game?';
+    popupPositive.value = newGame;
+    popupNegative.value = () => { popupVisible.value = false };
+    popupVisible.value = true;
 }
 
 function handleLose() {
-    Swal.fire({
-        title: 'Thất bại!',
-        text: 'Bạn đã hết lượt sai! Chơi lại không?',
-        icon: 'error',
-        showCancelButton: true,
-        confirmButtonText: 'Chơi lại',
-        cancelButtonText: 'Thoát'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            resetFocus();
-            gameStore.resetGame(nullCells);
-            loadGameCounter();
-        }
-    }); 
+    popupTitle.value = 'GAME OVER!';
+    popupDescription.value = 'You have exceeded the maximum number of wrong moves. Do you want to play new game?';
+    popupPositive.value = newGame;
+    popupNegative.value = () => {
+        gameStore.resetGame(nullCells);
+        router.push('/');
+    };
+    popupVisible.value = true;
+}
+
+function handlePopup() {
+    popupTitle.value = 'Are you sure?';
+    popupDescription.value = 'This action will reset your current progress.';
+    popupPositive.value = newGame;
+    popupNegative.value = () => { popupVisible.value = false };
+    popupVisible.value = true;
 }
 
 function loadGameCounter() {
@@ -108,18 +112,19 @@ function loadGameCounter() {
     countProgress.value = gameStore.getGameProgress;
 }
 
-// function handleValidate(currentFocus: object): boolean {
-//     const currentRow = (currentFocus as any).row;
-//     const currentCol = (currentFocus as any).col;
-//     const currentData = game
-// }
-
 watch(currentFocus, (newVal) => {
     console.log('Current Focus Changed:', newVal);
 });
 </script>
 
 <template>
+    <Popup 
+    v-if="popupVisible"
+    :title="popupTitle"
+    :description="popupDescription"
+    @positive="popupPositive"
+    @negative="popupNegative"
+    />
     <div class="grid lg:grid-cols-2 gap-4 p-4">
         <div class="col-span-1 lg:px-24">
             <div v-if="gameBoard" class="grid grid-rows-9 border-2 border-emerald-700">
@@ -165,7 +170,7 @@ watch(currentFocus, (newVal) => {
             </div>
             <Divider title="control" type="default" />
             <div class="flex flex-row gap-4 mt-4">
-                <Button class="uppercase font-medium" type="danger" @click="newGame">New game</Button>
+                <Button class="uppercase font-medium" type="danger" @click="handlePopup">New game</Button>
                 <Button class="uppercase font-medium" type="warning" @click="resetFocus">Clear answer</Button>
             </div>
         </div>
