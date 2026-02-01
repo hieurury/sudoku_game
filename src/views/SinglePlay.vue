@@ -4,6 +4,7 @@ import { useGameStore } from '../stores/useGameState';
 import { useGameFile } from '../stores/useGameFile';
 import { storeToRefs } from 'pinia';
 import { useRouter } from 'vue-router';
+import { loadSound, playSound } from '../utils/sound';
 
 //components
 import Counter from '../components/ui/Counter.vue';
@@ -21,6 +22,7 @@ const router = useRouter();
 const caninvalid = ref<number>(0);
 const inValidCount = ref<number>(0);
 const countProgress = ref<number>(0);
+const isCheckComplete = ref<boolean>(false);
 //popup control
 const popupVisible = ref<boolean>(false);
 const popupTitle = ref<string>('Title');
@@ -31,6 +33,9 @@ const popupNegative = ref<() => void>(() => {});
 const nullCells = 10;
 
 onMounted(() => {
+    loadSound('target', '/sounds/target.mp3');
+    loadSound('gameOver', '/sounds/game_over.mp3');
+    loadSound('gameWin', '/sounds/game_win.mp3');
     gameStore.initGame();
     //nhận giá trị valid từ store
     loadGameCounter();
@@ -79,14 +84,20 @@ function resetFocus() {
     gameStore.clearPlayerBoard();
 }
 
+//lúc win
 function handleWin() {
     popupTitle.value = 'CONGRATULATIONS!';
     popupDescription.value = 'Do yout want to play new game?';
     popupPositive.value = newGame;
-    popupNegative.value = () => { popupVisible.value = false };
+    popupNegative.value = () => {
+        gameStore.resetGame(nullCells);
+        router.push('/');
+    };
     popupVisible.value = true;
+    playSound('gameWin');
 }
 
+//lúc thua
 function handleLose() {
     popupTitle.value = 'GAME OVER!';
     popupDescription.value = 'You have exceeded the maximum number of wrong moves. Do you want to play new game?';
@@ -96,8 +107,10 @@ function handleLose() {
         router.push('/');
     };
     popupVisible.value = true;
+    playSound('gameOver');
 }
 
+//hiện popup
 function handlePopup() {
     popupTitle.value = 'Are you sure?';
     popupDescription.value = 'This action will reset your current progress.';
@@ -106,6 +119,7 @@ function handlePopup() {
     popupVisible.value = true;
 }
 
+//tải số liệu trò chơi
 function loadGameCounter() {
     inValidCount.value = gameStore.getInvalidCount;
     caninvalid.value = gameStore.getCanInvalid;
@@ -145,6 +159,7 @@ watch(currentFocus, (newVal) => {
                                 'bg-gray-400/90 dark:bg-gray-300/20':
                                     currentFocus &&
                                     (currentFocus.row === index || currentFocus.col === cellIndex),
+                                'bg-emerald-500! text-white!': cell === 0 && isCheckComplete,
                             },
                             'col-span-1 lg:text-4xl text-3xl lg:h-14 font-medium flex items-center border border-gray-300 justify-center text-center focus:outline-none',
                             'focus:caret-transparent cursor-pointer dark:focus:bg-gray-200 dark:focus:text-black focus:text-gray-300 focus:bg-slate-800/90',
@@ -152,6 +167,7 @@ watch(currentFocus, (newVal) => {
                         :record="JSON.stringify({ row: index, col: cellIndex })"
                         @input="handleInput($event)"
                         @focus="handleFocus($event)"
+                        @click="playSound('target')"
                         type="text"
                         maxlength="1"
                         :disabled="cell !== 0"
@@ -164,8 +180,23 @@ watch(currentFocus, (newVal) => {
             <div>
                 <h1 class="text-4xl uppercase font-semibold my-2">Battle information</h1>
                 <div class="flex items-center gap-2">
-                    <Counter progress theme="error" title="Current wrong" :count="inValidCount" :max="caninvalid" />
-                    <Counter progress theme="success" title="Current progress" :count="Math.abs(countProgress - nullCells)" :max="nullCells"/>
+                    <Counter 
+                        progress 
+                        theme="error" 
+                        title="Current wrong" 
+                        :count="inValidCount" 
+                        :max="caninvalid" 
+                    />
+                    <Counter 
+                        @mouseover="isCheckComplete = true" 
+                        @mouseleave="isCheckComplete = false" 
+                        progress 
+                        theme="success" 
+                        title="Current progress" 
+                        :count="Math.abs(countProgress - nullCells)" 
+                        :max="nullCells"
+                        class="cursor-pointer"
+                    />
                 </div>
             </div>
             <Divider title="control" type="default" />

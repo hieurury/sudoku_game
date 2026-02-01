@@ -8,6 +8,7 @@ import { watch } from 'vue';
 const themeStore = useThemes();
 const { theme } = storeToRefs(themeStore);
 
+
 watch(theme, (newVal) => {
   if (newVal) {
     document.documentElement.classList.add('dark');

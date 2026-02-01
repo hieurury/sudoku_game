@@ -1,7 +1,13 @@
 <script setup lang="ts">
+import { onMounted } from 'vue';
 //components
 import Button from './Button.vue';
 import Divider from './Divider.vue';
+import { loadSound, playSound } from '../../utils/sound';
+
+onMounted(() => {
+    loadSound('pop', '/sounds/pop.mp3');
+});
 
 
 const emit = defineEmits<{
@@ -13,12 +19,17 @@ defineProps<{
     title?: string;
     description?: string;
 }>();
+
+function voidClick() {
+    playSound('pop');
+    emit('negative')
+}
    
 </script>
 
 <template>
     <div 
-    @click="() => { emit('negative') }"
+    @click="voidClick"
     class="fixed z-999 top-0 bottom-0 left-0 right-0 bg-slate-200/90 dark:bg-slate-700/90 flex justify-center items-center">
         <div
         @click.stop
