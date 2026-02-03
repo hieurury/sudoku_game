@@ -4,7 +4,7 @@ import { createWebHistory, createRouter } from "vue-router";
 import MainLayout from "../layouts/MainLayout.vue";
 //views
 import Home from "../views/Home.vue";
-import SinglePlay from "../views/SinglePlay.vue";
+import QuickPlay from "../views/QuickPlay.vue";
 
 const routes = [
     {
@@ -17,9 +17,9 @@ const routes = [
                 component: Home,
             },
             {
-                path: "single-play",
-                name: "SinglePlayView",
-                component: SinglePlay,
+                path: "quick-play",
+                name: "QuickPlayView",
+                component: QuickPlay,
             }
         ]
     }

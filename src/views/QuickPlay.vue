@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { onMounted, watch, ref } from 'vue';
+import { onMounted, watch, ref, computed } from 'vue';
 import { useGameStore } from '../stores/useGameState';
 import { useGameFile } from '../stores/useGameFile';
 import { storeToRefs } from 'pinia';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { loadSound, playSound } from '../utils/sound';
 
 //components
@@ -16,12 +16,13 @@ const gameStore = useGameStore();
 const gameFile = useGameFile();
 const { gameBoard, playerBoard, currentFocus, cellStatus } = storeToRefs(gameStore);
 const router = useRouter();
-
+const route = useRoute();
 
 // const isWin = ref<boolean>(false);
 const caninvalid = ref<number>(0);
 const inValidCount = ref<number>(0);
 const countProgress = ref<number>(0);
+const nullCells = ref<number>(0);
 const isCheckComplete = ref<boolean>(false);
 //popup control
 const popupVisible = ref<boolean>(false);
@@ -30,20 +31,28 @@ const popupDescription = ref<string>('Description');
 const popupPositive = ref<() => void>(() => {});
 const popupNegative = ref<() => void>(() => {});
 //game settings
-const nullCells = 10;
+type GameDifficulty = 'easy' | 'medium' | 'hard';
+const gameDifficulty = computed<GameDifficulty>(() => {
+    const difficultyParam = route.query.difficulty;
+    if (difficultyParam === 'easy' || difficultyParam === 'medium' || difficultyParam === 'hard') {
+        return difficultyParam as GameDifficulty;
+    }
+    return 'easy';
+});
 
 onMounted(() => {
+    console.log(route);
     loadSound('target', '/sounds/target.mp3');
     loadSound('gameOver', '/sounds/game_over.mp3');
     loadSound('gameWin', '/sounds/game_win.mp3');
-    gameStore.initGame();
+    gameStore.initGame(3, gameDifficulty.value);
     //nhận giá trị valid từ store
     loadGameCounter();
 });
 
 function newGame() {
     resetFocus();
-    gameStore.resetGame(nullCells);
+    gameStore.resetGame(3, gameDifficulty.value);
     loadGameCounter();
 
     //poup control
@@ -90,8 +99,7 @@ function handleWin() {
     popupDescription.value = 'Do yout want to play new game?';
     popupPositive.value = newGame;
     popupNegative.value = () => {
-        gameStore.resetGame(nullCells);
-        router.push('/');
+        gameStore.resetGame(3, gameDifficulty.value);
     };
     popupVisible.value = true;
     playSound('gameWin');
@@ -103,7 +111,7 @@ function handleLose() {
     popupDescription.value = 'You have exceeded the maximum number of wrong moves. Do you want to play new game?';
     popupPositive.value = newGame;
     popupNegative.value = () => {
-        gameStore.resetGame(nullCells);
+        gameStore.clearGameState();
         router.push('/');
     };
     popupVisible.value = true;
@@ -124,6 +132,7 @@ function loadGameCounter() {
     inValidCount.value = gameStore.getInvalidCount;
     caninvalid.value = gameStore.getCanInvalid;
     countProgress.value = gameStore.getGameProgress;
+    nullCells.value = gameStore.getGameNullCell;
 }
 
 watch(currentFocus, (newVal) => {

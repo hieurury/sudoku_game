@@ -6,7 +6,7 @@ const gameFile = useGameFile();
 const boardSize = 9;
 type Board = number[][];
 type Status = boolean[][];
-
+type GameDifficulty = 'easy' | 'medium' | 'hard';
 const STORAGE_KEY = 'sudoku_game_state';
 
 export const useGameStore = defineStore('game', {
@@ -19,7 +19,8 @@ export const useGameStore = defineStore('game', {
             Array(boardSize).fill(true)
         ) as Status,
         canInvalid: 3 as number,
-        invalidCount: 0 as number
+        invalidCount: 0 as number,
+        gameDifficulty: 'easy' as GameDifficulty,
     }),
 
     actions: {
@@ -82,7 +83,8 @@ export const useGameStore = defineStore('game', {
                 playerBoard: this.playerBoard,
                 cellStatus: this.cellStatus,
                 canInvalid: this.canInvalid,
-                invalidCount: this.invalidCount
+                invalidCount: this.invalidCount,
+                gameDifficulty: this.gameDifficulty
             };
             gameFile.saveGame(gameState);
             localStorage.setItem(STORAGE_KEY, JSON.stringify(gameState));
@@ -100,6 +102,7 @@ export const useGameStore = defineStore('game', {
                     this.cellStatus = gameState.cellStatus;
                     this.canInvalid = gameState.canInvalid;
                     this.invalidCount = gameState.invalidCount;
+                    this.gameDifficulty = gameState.gameDifficulty;
                     return true;
                 } catch (e) {
                     console.error('Failed to load game:', e);
@@ -120,20 +123,21 @@ export const useGameStore = defineStore('game', {
         },
 
         // Kiểm tra hợp lệ
-        checkBoard(row: number, col: number): boolean {
-            const currentValue = this._solutionBoard[row]?.[col];
+        checkBoard(board: Board, row: number, col: number, num: number): boolean {
+            const currentValue = num;
+            if (!currentValue) return false;
             
             // check row
             for (let i = 0; i < boardSize; i++) {
                 if (i === col) continue;
-                if (this._solutionBoard[row]?.[i] === currentValue) {
+                if (board[row]?.[i] === currentValue) {
                     return false;
                 }
             }
             // check col
             for (let i = 0; i < boardSize; i++) {
                 if (i === row) continue;
-                if (this._solutionBoard[i]?.[col] === currentValue) {
+                if (board[i]?.[col] === currentValue) {
                     return false;
                 }
             }
@@ -143,7 +147,7 @@ export const useGameStore = defineStore('game', {
             for (let i = startRow; i < startRow + 3; i++) {
                 for (let j = startCol; j < startCol + 3; j++) {
                     if (i === row && j === col) continue;
-                    if (this._solutionBoard[i]?.[j] === currentValue) {
+                    if (board[i]?.[j] === currentValue) {
                         return false;
                     }
                 }
@@ -168,7 +172,7 @@ export const useGameStore = defineStore('game', {
 
             for (const num of numbers) {
                 this._solutionBoard[row]![col] = num;
-                if (this.checkBoard(row, col)) {
+                if (this.checkBoard(this._solutionBoard, row, col, this._solutionBoard[row]![col]!)) {
                     if (this.fillBoard(nextRow, nextCol)) {
                         return true;
                     }
@@ -177,9 +181,51 @@ export const useGameStore = defineStore('game', {
             }
             return false;
         },
+        solveSudoku(
+            board: Board, 
+            { countMode = false, limit = 1, stepCount = null }: { 
+                countMode?: boolean; 
+                limit?: number; 
+                stepCount?: { value: number } | null 
+            } = {}
+        ): number | boolean {
+            let count = 0;
+            const solve = (b: Board): boolean => {
+                for (let row = 0; row < 9; row++) {
+                    for (let col = 0; col < 9; col++) {
+                        if (b[row]![col] === 0) {
+                            for (let num = 1; num <= 9; num++) {
+                                if (this.checkBoard(b, row, col, num)) {
+                                    b[row]![col] = num;
+                                    if (stepCount !== null) {
+                                        stepCount.value++;
+                                    }
+                                    if (solve(b) && !countMode) return true;
+                                    b[row]![col] = 0;
+                                }
+                            }
+                            return false;
+                        }
+                    }
+                }
+                count++;
+                return count >= limit && countMode;
+            };
+            const clone = board.map(row => [...row]);
+            solve(clone);
+            return countMode ? count : count > 0;
+        },
 
         // Tạo game mới
-        newGame(nullCell: number = 40, canInvalid: number = 3) {
+        newGame(canInvalid: number = 3, gameDifficulty: GameDifficulty = 'easy') {
+            const difficulty = {
+                'easy': [20, 30],
+                'medium': [31, 40],
+                'hard': [41, 50]
+            }
+            const [minNull, maxNull] = difficulty[gameDifficulty];
+            let nullCell = Math.floor(Math.random() * (maxNull! - minNull! + 1)) + minNull!;
+
             this.generateBoard();
             this.cellStatus = Array.from({ length: boardSize }, () => 
                 Array(boardSize).fill(true)
@@ -195,6 +241,11 @@ export const useGameStore = defineStore('game', {
                 const col = Math.floor(Math.random() * boardSize);
                 if (this.gameBoard[row]?.[col] !== 0) {
                     this.gameBoard[row]![col] = 0;
+                    if(this.solveSudoku(this.gameBoard, { countMode: true, limit: 2 }) !== 1) {
+                        //nếu không duy nhất 1 nghiệm thì khôi phục lại, xoá ô khác
+                        this.gameBoard[row]![col] = this._solutionBoard[row]![col]!;
+                        continue;
+                    }
                     nullCell--;
                 }
             }
@@ -236,17 +287,21 @@ export const useGameStore = defineStore('game', {
             this.saveGame();
         },
 
-        // Reset game
-        resetGame(nullCell: number = 40, canInvalid: number = 3) {
+        //clear all game state
+        clearGameState() {
             localStorage.removeItem(STORAGE_KEY);
-            this.newGame(nullCell, canInvalid);
+        },
+        // Reset game
+        resetGame(canInvalid: number = 3, gameDifficulty: GameDifficulty = 'easy') {
+            localStorage.removeItem(STORAGE_KEY);
+            this.newGame(canInvalid, gameDifficulty);
             this.clearFocus();
         },
 
         // Khởi tạo game
-        initGame(nullCell: number = 40, canInvalid: number = 3) {
+        initGame(canInvalid: number = 3, gameDifficulty: GameDifficulty = 'easy') {
             if (!this.loadGame()) {
-                this.newGame(nullCell, canInvalid);
+                this.newGame(canInvalid, gameDifficulty);
             }
         },
         isWin(): boolean {
@@ -275,6 +330,17 @@ export const useGameStore = defineStore('game', {
             for(let i = 0; i < boardSize; i++) {
                 for(let j = 0; j < boardSize; j++) {
                     if(this.playerBoard[i]?.[j] !== this._solutionBoard[i]?.[j]) {
+                        cell++;                        
+                    }
+                }
+            }
+            return cell;
+        },
+        getGameNullCell(): number {
+            let cell: number = 0;
+            for(let i = 0; i < boardSize; i++) {
+                for(let j = 0; j < boardSize; j++) {
+                    if(this.gameBoard[i]?.[j] === 0) {
                         cell++;                        
                     }
                 }
