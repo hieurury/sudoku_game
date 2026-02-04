@@ -10,23 +10,45 @@
 
     const modalVisible = ref(false);
 
+    const gameDifficulty = computed(() => {
+        const gameState = localStorage.getItem('sudoku_game_state');
+        if (!gameState) return null;
+        return JSON.parse(gameState).gameDifficulty;
+    });
+    const continueGameBtn = computed(() => {
+        return !!localStorage.getItem('sudoku_game_state');
+    });
 
-    const quickPlayTitle = computed(() => {
-        return localStorage.getItem('sudoku_game_state') ? 'Continue Game' : 'Quick Play';
-    })
+    function startNewGame() {
+        localStorage.removeItem('sudoku_game_state');
+        modalVisible.value = true;
+    }
+    function continueGame() {
+        if (gameDifficulty.value) {
+            router.push(`/quick-play?difficulty=${gameDifficulty.value}`);
+        }
+    }
 </script>
 
 <template>
     <div class="w-full min-h-screen flex flex-col space-y-4 justify-center items-center dark:bg-black/90 bg-white">
         <h1 class="text-5xl uppercase font-semibold dark:text-gray-300 tracking-wider">SUDOKU GAME</h1>
         <div class="flex justify-center items-center flex-col">
-            <Button 
-            @click="() => modalVisible = true"
-            >{{ quickPlayTitle }}</Button>
+            <div class="flex flex-col gap-2">
+                <Button 
+                v-if="continueGameBtn"
+                @click="continueGame"
+                >Continue game</Button>
+                <Button
+                type="danger"
+                @click="startNewGame"
+                >New game</Button>
+            </div>
         </div>
         <Modal
         v-if="modalVisible"
         title="Select Difficulty"
+        @close="modalVisible = false"
         >
             <Card title="Easy"
             description="Dễ chơi, dễ trúng thưởng"

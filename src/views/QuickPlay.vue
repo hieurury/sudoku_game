@@ -150,7 +150,7 @@ watch(currentFocus, (newVal) => {
     />
     <div class="grid lg:grid-cols-2 gap-4 p-4">
         <div class="col-span-1 lg:px-24">
-            <div v-if="gameBoard" class="grid grid-rows-9 border-2 border-emerald-700">
+            <div v-if="gameBoard" class="grid grid-rows-9 border-2 border-emerald-700 dark:border-emerald-300">
                 <div
                     class="row-span-1 grid grid-cols-9"
                     v-for="(board, index) in gameBoard"
@@ -161,16 +161,16 @@ watch(currentFocus, (newVal) => {
                         :key="cellIndex"
                         :class="[
                             {
-                                'border-r-2 border-r-emerald-700': [2, 5].includes(cellIndex),
-                                'border-b-2 border-b-emerald-700': [2, 5].includes(index),
-                                'text-red-500': cellStatus[index]?.[cellIndex] === false,
+                                'border-r-2 border-r-emerald-700 dark:border-r-emerald-300': [2, 5].includes(cellIndex),
+                                'border-b-2 border-b-emerald-700 dark:border-b-emerald-300': [2, 5].includes(index),
+                                'text-red-500!': cellStatus[index]?.[cellIndex] === false,
                                 // 'bg-red-200/20': cell == 0,
                                 'bg-gray-400/90 dark:bg-gray-300/20':
                                     currentFocus &&
                                     (currentFocus.row === index || currentFocus.col === cellIndex),
                                 'bg-emerald-500! text-white!': cell === 0 && isCheckComplete,
                             },
-                            'col-span-1 lg:text-4xl text-3xl lg:h-14 font-medium flex items-center border border-gray-300 justify-center text-center focus:outline-none',
+                            'col-span-1 lg:text-4xl text-3xl lg:h-14 font-medium flex items-center border border-gray-300 dark:border-gray-500 justify-center text-center focus:outline-none',
                             'focus:caret-transparent cursor-pointer dark:focus:bg-gray-200 dark:focus:text-black focus:text-gray-300 focus:bg-slate-800/90',
                         ]"
                         :record="JSON.stringify({ row: index, col: cellIndex })"
