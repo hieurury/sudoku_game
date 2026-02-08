@@ -223,6 +223,9 @@ export const useGameStore = defineStore('game', {
                 'medium': [31, 40],
                 'hard': [41, 50]
             }
+
+            this.setGameDifficulty(gameDifficulty);
+
             const [minNull, maxNull] = difficulty[gameDifficulty];
             let nullCell = Math.floor(Math.random() * (maxNull! - minNull! + 1)) + minNull!;
 
@@ -275,6 +278,11 @@ export const useGameStore = defineStore('game', {
         // Set focus
         setFocus(focus: { row: number; col: number } | null) {
             this.currentFocus = focus;
+        },
+
+        setGameDifficulty(difficulty: GameDifficulty) {
+            this.gameDifficulty = difficulty;
+            this.saveGame();
         },
 
         clearFocus() {

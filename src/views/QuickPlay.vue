@@ -45,6 +45,7 @@ onMounted(() => {
     loadSound('target', '/sounds/target.mp3');
     loadSound('gameOver', '/sounds/game_over.mp3');
     loadSound('gameWin', '/sounds/game_win.mp3');
+    console.log(gameDifficulty.value);
     gameStore.initGame(3, gameDifficulty.value);
     //nhận giá trị valid từ store
     loadGameCounter();
@@ -89,6 +90,10 @@ function handleFocus(e: FocusEvent) {
     }
 }
 
+function handleFocusOut(e: FocusEvent) {
+    gameStore.clearFocus();
+}
+
 function resetFocus() {
     gameStore.clearPlayerBoard();
 }
@@ -100,6 +105,7 @@ function handleWin() {
     popupPositive.value = newGame;
     popupNegative.value = () => {
         gameStore.resetGame(3, gameDifficulty.value);
+        router.push('/');
     };
     popupVisible.value = true;
     playSound('gameWin');
@@ -176,6 +182,7 @@ watch(currentFocus, (newVal) => {
                         :record="JSON.stringify({ row: index, col: cellIndex })"
                         @input="handleInput($event)"
                         @focus="handleFocus($event)"
+                        @focusout="handleFocusOut($event)"
                         @click="playSound('target')"
                         type="text"
                         maxlength="1"

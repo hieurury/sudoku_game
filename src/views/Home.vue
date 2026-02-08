@@ -5,6 +5,7 @@
     import Button from '../components/ui/Button.vue';
     import Modal from '../components/ui/Modal.vue';
     import Card from '../components/ui/Card.vue';
+    import Badge from '../components/ui/Badge.vue';
 
     const router = useRouter();
 
@@ -28,6 +29,20 @@
             router.push(`/quick-play?difficulty=${gameDifficulty.value}`);
         }
     }
+
+
+    const badgeTheme = computed(() => {
+        switch (gameDifficulty.value) {
+            case 'easy':
+                return 'success';
+            case 'medium':
+                return 'warning';
+            case 'hard':
+                return 'danger';
+            default:
+                return 'info';
+        }
+    });
 </script>
 
 <template>
@@ -35,10 +50,15 @@
         <h1 class="text-5xl uppercase font-semibold dark:text-gray-300 tracking-wider">SUDOKU GAME</h1>
         <div class="flex justify-center items-center flex-col">
             <div class="flex flex-col gap-2">
-                <Button 
-                v-if="continueGameBtn"
-                @click="continueGame"
-                >Continue game</Button>
+                <Badge
+                :title="gameDifficulty"
+                :theme="badgeTheme"
+                >
+                    <Button 
+                    v-if="continueGameBtn"
+                    @click="continueGame"
+                    >Continue game</Button>
+                </Badge>
                 <Button
                 type="danger"
                 @click="startNewGame"
