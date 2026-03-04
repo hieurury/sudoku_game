@@ -9,19 +9,13 @@ import QuickPlay from "../views/QuickPlay.vue";
 const routes = [
     {
         path: "/",
-        component: MainLayout,
-        children: [
-            {
-                path: "",
-                name: "HomeView",
-                component: Home,
-            },
-            {
-                path: "quick-play",
-                name: "QuickPlayView",
-                component: QuickPlay,
-            }
-        ]
+        name: "HomeView",
+        component: Home,
+    },
+    {
+        path: "/quick-play",
+        name: "QuickPlay",
+        component: QuickPlay,
     }
 ];
 

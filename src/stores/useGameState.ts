@@ -304,6 +304,45 @@ export const useGameStore = defineStore('game', {
                 this.newGame(canInvalid, gameDifficulty);
             }
         },
+
+        // Tạo game tuỳ chỉnh với số ô trống cố định
+        newGameCustom(canInvalid: number = 3, nullCells: number = 35) {
+            const clampedNull = Math.max(1, Math.min(50, nullCells));
+            this.generateBoard();
+            this.cellStatus = Array.from({ length: boardSize }, () =>
+                Array(boardSize).fill(true)
+            ) as Status;
+            this.gameBoard = this._solutionBoard.map(row => [...row]);
+            this.invalidCount = 0;
+            this.canInvalid = canInvalid;
+            this.gameDifficulty = 'hard'; // fallback label
+
+            let remaining = clampedNull;
+            const maxAttempts = clampedNull * 10;
+            let attempts = 0;
+            while (remaining > 0 && attempts < maxAttempts) {
+                attempts++;
+                const row = Math.floor(Math.random() * boardSize);
+                const col = Math.floor(Math.random() * boardSize);
+                if (this.gameBoard[row]?.[col] !== 0) {
+                    this.gameBoard[row]![col] = 0;
+                    if (this.solveSudoku(this.gameBoard, { countMode: true, limit: 2 }) !== 1) {
+                        this.gameBoard[row]![col] = this._solutionBoard[row]![col]!;
+                        continue;
+                    }
+                    remaining--;
+                }
+            }
+            this.playerBoard = this.gameBoard.map(row => [...row]);
+            this.saveGame();
+        },
+
+        resetGameCustom(canInvalid: number = 3, nullCells: number = 35) {
+            localStorage.removeItem(STORAGE_KEY);
+            this.newGameCustom(canInvalid, nullCells);
+            this.clearFocus();
+        },
+
         isWin(): boolean {
             for (let i = 0; i < boardSize; i++) {
                 for (let j = 0; j < boardSize; j++) {

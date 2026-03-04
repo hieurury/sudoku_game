@@ -14,16 +14,28 @@ function voidClick() {
 </script>
 
 <template>
-    <div 
-    @click="voidClick"
-    class="fixed top-0 left-0 bottom-0 right-0 flex justify-center items-center">
+    <div
+        @click="voidClick"
+        class="fixed inset-0 flex justify-center items-center bg-black/20 z-50"
+    >
         <div
-        @click.stop
-        class="min-w-lg border-3 shadow dark:bg-slate-700 bg-white px-4 py-4">
-            <h2 class="text-4xl uppercase text-center my-2">{{ title }}</h2>
-            <div class="flex flex-wrap gap-2 p-4">
+            @click.stop
+            class="border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-950 shadow-[6px_6px_0px_rgba(0,0,0,0.25)] dark:shadow-[6px_6px_0px_rgba(255,255,255,0.08)] px-6 py-6"
+        >
+            <!-- header -->
+            <div class="flex items-center justify-between mb-6 gap-16">
+                <h2 class="text-3xl uppercase font-bold tracking-widest dark:text-white">{{ title }}</h2>
+                <button
+                    @click="voidClick"
+                    class="text-gray-400 hover:text-gray-800 dark:hover:text-white text-2xl leading-none cursor-pointer transition-colors"
+                >✕</button>
+            </div>
+            <!-- cards -->
+            <div class="flex flex-wrap gap-4">
                 <slot></slot>
             </div>
+            <!-- footer slot -->
+            <slot name="footer"></slot>
         </div>
     </div>
 </template>

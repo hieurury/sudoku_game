@@ -1,9 +1,13 @@
 <script setup lang="ts">
 import { onMounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 //components
 import Button from './Button.vue';
 import Divider from './Divider.vue';
 import { loadSound, playSound } from '../../utils/sound';
+
+
+const { t } = useI18n();
 
 onMounted(() => {
     loadSound('pop', '/sounds/pop.mp3');
@@ -38,8 +42,8 @@ function voidClick() {
             <p class="w-7/10 text-center">{{ description }}</p>
             <Divider title="action" type="warning"/>
             <div class="flex justify-center items-center gap-4">
-                <Button @click.stop="emit('positive')">Yes</Button>
-                <Button type="danger" @click.stop="emit('negative')">No</Button>
+                <Button @click.stop="emit('positive')">{{ t('more.yes') }}</Button>
+                <Button type="danger" @click.stop="emit('negative')">{{ t('more.no') }}</Button>
             </div>
         </div>
     </div>

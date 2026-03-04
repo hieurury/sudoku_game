@@ -1,0 +1,73 @@
+{
+  "home": {
+    "title": "SUDOKU GAME",
+    "continueGame": "Continue Game",
+    "newGame": "New Game",
+    "setting": "Setting",
+    "modal": {
+      "title": "Select Difficulty",
+      "easy": {
+        "title": "Easy",
+        "description": "Easy, relaxing gameplay"
+      },
+      "medium": {
+        "title": "Medium",
+        "description": "Medium, more challenging"
+      },
+      "hard": {
+        "title": "Hard",
+        "description": "Hard, for experienced players"
+      },
+      "custom": "Customize",
+      "emptyCells": "Empty cells",
+      "difficulty": "Difficulty",
+      "start": "Start"
+    }
+  },
+  "quickPlay": {
+    "generatingBoard": "Generating board...",
+    "battleInfo": "Battle information",
+    "currentWrong": "Current wrong",
+    "currentProgress": "Current progress",
+    "newGame": "New game",
+    "clearAnswer": "Clear answer",
+    "exit": "Exit",
+    "popup": {
+      "congrats": "CONGRATULATIONS!",
+      "congratsDesc": "Do you want to play a new game?",
+      "gameOver": "GAME OVER!",
+      "gameOverDesc": "You have exceeded the maximum number of wrong moves. Do you want to play a new game?",
+      "confirm": "Are you sure?",
+      "confirmDesc": "This action will reset your current progress.",
+      "exit": "Exit game?",
+      "exitDesc": "Your current progress will be saved. You can continue later."
+    }
+  },
+  "header": {
+    "help": "Help"
+  },
+  "settings": {
+    "title": "Settings",
+    "theme": {
+      "title": "Theme",
+      "description": "Choose your preferred display mode.",
+      "light": "Light",
+      "dark": "Dark"
+    },
+    "sounds": {
+      "title": "Sounds",
+      "description": "Toggle in-game sound effects on or off.",
+      "on": "Sound On",
+      "off": "Sound Off",
+      "hint": "Applies to all in-game sound effects"
+    },
+    "language": {
+      "title": "Language",
+      "description": "Select your preferred interface language."
+    }
+  },
+    "more": {
+        "yes": "Yes",
+        "no": "No"
+    }
+}

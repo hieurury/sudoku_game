@@ -9,10 +9,12 @@ onMounted(() => {
 
 const {
     disabled = false,
-    type = 'default'
+    type = 'default',
+    size = 'md',
 } = defineProps<{
     disabled?: boolean;
     type?: 'default' | 'primary' | 'warning' | 'danger';
+    size?: 'sm' | 'md' | 'lg' | 'none';
 }>();
 
 const styles = {
@@ -20,6 +22,13 @@ const styles = {
     primary: "bg-blue-500",
     warning: "bg-yellow-500",
     danger: "bg-red-500",
+}
+
+const sizes = {
+    sm:   'px-3 py-0.5',
+    md:   'px-6 py-1',
+    lg:   'px-8 py-2',
+    none: '',
 }
 
 function handleClick() {
@@ -30,7 +39,7 @@ function handleClick() {
 <template>
     <button 
     @click="handleClick"
-    :class="`${styles[type]} shadow-[0_6px_2px_rgba(0,0,0,0.5)] border-2 dark:text-gray-300 text-white px-6 py-1 cursor-pointer
+    :class="`${styles[type]} ${sizes[size]} shadow-[0_6px_2px_rgba(0,0,0,0.5)] border-2 dark:text-gray-300 text-white cursor-pointer
     active:shadow-none active:translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-100 ease-in`"
     :disabled="disabled">
         <slot></slot>

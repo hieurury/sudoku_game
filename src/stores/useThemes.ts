@@ -1,14 +1,17 @@
 import { defineStore } from 'pinia';
 
-// type themeType = 'light' | 'dark';
-
 export const useThemes = defineStore('themes', {
     state: () => ({
-        theme: false as boolean,
+        theme: localStorage.getItem('sudoku_theme') === 'dark',
     }),
     actions: {
         toggleTheme() {
             this.theme = !this.theme;
+            localStorage.setItem('sudoku_theme', this.theme ? 'dark' : 'light');
+        },
+        setTheme(dark: boolean) {
+            this.theme = dark;
+            localStorage.setItem('sudoku_theme', dark ? 'dark' : 'light');
         }
     }
 });

@@ -1,0 +1,73 @@
+{
+  "home": {
+    "title": "SUDOKU GAME",
+    "continueGame": "Chơi tiếp",
+    "newGame": "Làm trận mới",
+    "setting": "Cài đặt",
+    "modal": {
+      "title": "Chọn độ khó",
+      "easy": {
+        "title": "Dễ",
+        "description": "Dễ chơi, ít ô trống"
+      },
+      "medium": {
+        "title": "Trung bình",
+        "description": "Trung bình, không quá khó khăn"
+      },
+      "hard": {
+        "title": "Khó",
+        "description": "Khó, có quỷ mới ngồi giải"
+      },
+      "custom": "Tuỳ chỉnh",
+      "emptyCells": "Số ô trống",
+      "difficulty": "Độ khó",
+      "start": "Bắt đầu"
+    }
+  },
+  "quickPlay": {
+    "generatingBoard": "Đang tạo bảng...",
+    "battleInfo": "Thông tin trận đấu",
+    "currentWrong": "Số lần sai",
+    "currentProgress": "Tiến độ giải",
+    "newGame": "Làm trận mới",
+    "clearAnswer": "Xóa đáp án",
+    "exit": "Thoát",
+    "popup": {
+      "congrats": "CHÚC MỪNG!",
+      "congratsDesc": "Bạn có muốn chơi ván mới không?",
+      "gameOver": "THUA RỒI!",
+      "gameOverDesc": "Bạn đã vượt quá số lần sai tối đa. Bạn có muốn chơi ván mới không?",
+      "confirm": "Bạn có chắc không?",
+      "confirmDesc": "Hành động này sẽ đặt lại tiến trình hiện tại của bạn.",
+      "exit": "Thoát trò chơi?",
+      "exitDesc": "Tiến trình hiện tại sẽ được lưu lại. Bạn có thể tiếp tục sau."
+    }
+  },
+  "header": {
+    "help": "Trợ giúp"
+  },
+  "settings": {
+    "title": "Cài đặt",
+    "theme": {
+      "title": "Giao diện",
+      "description": "Chọn chế độ hiển thị yêu thích của bạn.",
+      "light": "Sáng",
+      "dark": "Tối"
+    },
+    "sounds": {
+      "title": "Âm thanh",
+      "description": "Bật hoặc tắt hiệu ứng âm thanh trong trò chơi.",
+      "on": "Bật âm thanh",
+      "off": "Tắt âm thanh",
+      "hint": "Áp dụng cho tất cả hiệu ứng âm thanh"
+    },
+    "language": {
+      "title": "Ngôn ngữ",
+      "description": "Chọn ngôn ngữ hiển thị giao diện."
+    }
+  },
+    "more": {
+        "yes": "Có",
+        "no": "Không"
+    }
+}
