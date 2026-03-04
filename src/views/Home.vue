@@ -7,9 +7,6 @@
     import Button from '../components/ui/Button.vue';
     import Modal from '../components/ui/Modal.vue';
     import Card from '../components/ui/Card.vue';
-    import SettingsModal from '../components/partials/SettingsModal.vue';
-
-    const { t } = useI18n();
 
     const router = useRouter();
 
@@ -44,11 +41,6 @@
             router.push(`/quick-play?difficulty=${gameDifficulty.value}`);
         }
     }
-    function startCustomGame() {
-        modalVisible.value = false;
-        showCustomPanel.value = false;
-        router.push(`/quick-play?difficulty=custom&nullCells=${customNullCells.value}`);
-    }
 </script>
 
 <template>
@@ -57,13 +49,9 @@
         <div class="flex justify-center items-center flex-col">
             <div class="flex flex-col gap-2">
                 <Button 
-                    class="w-64 text-2xl flex items-center justify-center"
-                    v-if="continueGameBtn"
-                    @click="continueGame"
-                    >
-                    <Icon icon="material-symbols-light:play-circle-outline" width="32" height="32" />
-                    <h3>{{ t('home.continueGame') }}</h3>
-                </Button>
+                v-if="continueGameBtn"
+                @click="continueGame"
+                >Continue game</Button>
                 <Button
                 class="w-64 text-2xl flex items-center justify-center"
                 type="danger"
