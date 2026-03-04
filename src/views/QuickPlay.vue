@@ -67,9 +67,16 @@ onMounted(() => {
     loadSound('target', '/sounds/target.mp3');
     loadSound('gameOver', '/sounds/game_over.mp3');
     loadSound('gameWin', '/sounds/game_win.mp3');
-    gameStore.initGame(3, gameDifficulty.value);
-    //nhận giá trị valid từ store
-    loadGameCounter();
+    isLoading.value = true;
+    setTimeout(() => {
+        if (isCustomMode.value) {
+            gameStore.newGameCustom(3, customNullCells.value);
+        } else {
+            gameStore.initGame(3, gameDifficulty.value);
+        }
+        loadGameCounter();
+        isLoading.value = false;
+    }, 50);
 });
 
 function newGame() {
@@ -189,73 +196,109 @@ watch(currentFocus, (newVal) => {
     @positive="popupPositive"
     @negative="popupNegative"
     />
-    <div class="grid lg:grid-cols-2 gap-4 p-4">
-        <div class="col-span-1 lg:px-24">
-            <div v-if="gameBoard" class="grid grid-rows-9 border-2 border-emerald-700 dark:border-emerald-300">
-                <div
-                    class="row-span-1 grid grid-cols-9"
-                    v-for="(board, index) in gameBoard"
-                    :key="index"
-                >
+    <SettingsModal v-if="settingsVisible" @close="settingsVisible = false" />
+    <!-- Top-right action buttons -->
+    <div class="fixed top-4 right-4 z-50 flex items-center gap-2">
+        <Button
+            size="sm"
+            type="danger"
+            @click="handleExit"
+            class="flex items-center gap-1 uppercase tracking-widest text-xs font-bold"
+        >
+            <Icon icon="material-symbols-light:logout-rounded" width="18" height="18" />
+            <span class="hidden sm:inline">{{ t('quickPlay.exit') }}</span>
+        </Button>
+        <Button
+            size="sm"
+            @click="settingsVisible = true"
+            class="flex items-center gap-1 uppercase tracking-widest text-xs font-bold"
+        >
+            <Icon icon="material-symbols-light:settings-rounded" width="18" height="18" />
+            <span class="hidden sm:inline">{{ t('home.setting') }}</span>
+        </Button>
+    </div>
+    <div class="min-h-screen flex flex-col pt-8 dark:bg-black/90 bg-white">
+        <div class="flex-1 flex items-center justify-center p-6">
+        <div class="grid lg:grid-cols-2 gap-16 p-4">
+            <div class="col-span-1">
+                <div class="w-7/8 mx-auto aspect-square relative">
+                <!-- Real board (always in DOM) -->
+                <div v-if="gameBoard" class="grid grid-rows-9 grid-cols-9 border-2 border-emerald-700 dark:border-emerald-300 w-full h-full">
                     <input
-                        v-for="(cell, cellIndex) in board"
+                        v-for="(cell, cellIndex) in gameBoard.flat()"
                         :key="cellIndex"
                         :class="[
                             {
-                                'border-r-2 border-r-emerald-700 dark:border-r-emerald-300': [2, 5].includes(cellIndex),
-                                'border-b-2 border-b-emerald-700 dark:border-b-emerald-300': [2, 5].includes(index),
-                                'text-red-500!': cellStatus[index]?.[cellIndex] === false,
-                                // 'bg-red-200/20': cell == 0,
+                                'border-r-2 border-r-emerald-700 dark:border-r-emerald-300': [2, 5].includes(cellIndex % 9),
+                                'border-b-2 border-b-emerald-700 dark:border-b-emerald-300': [2, 5].includes(Math.floor(cellIndex / 9)),
+                                'text-red-500!': cellStatus[Math.floor(cellIndex / 9)]?.[cellIndex % 9] === false,
                                 'bg-gray-400/90 dark:bg-gray-300/20':
                                     currentFocus &&
-                                    (currentFocus.row === index || currentFocus.col === cellIndex),
+                                    (currentFocus.row === Math.floor(cellIndex / 9) || currentFocus.col === cellIndex % 9),
                                 'bg-emerald-500! text-white!': cell === 0 && isCheckComplete,
                             },
-                            'col-span-1 lg:text-4xl text-3xl lg:h-14 font-medium flex items-center border border-gray-300 dark:border-gray-500 justify-center text-center focus:outline-none',
+                            'text-3xl lg:text-4xl font-medium flex items-center border border-gray-300 dark:border-gray-500 justify-center text-center focus:outline-none aspect-square w-full',
                             'focus:caret-transparent cursor-pointer dark:focus:bg-gray-200 dark:focus:text-black focus:text-gray-300 focus:bg-slate-800/90',
                         ]"
-                        :record="JSON.stringify({ row: index, col: cellIndex })"
+                        :record="JSON.stringify({ row: Math.floor(cellIndex / 9), col: cellIndex % 9 })"
                         @input="handleInput($event)"
                         @focus="handleFocus($event)"
                         @click="playSound('target')"
                         type="text"
                         maxlength="1"
                         :disabled="cell !== 0"
-                        :value="cell !== 0 ? cell : playerBoard[index]?.[cellIndex] || ''"
+                        :value="cell !== 0 ? cell : playerBoard[Math.floor(cellIndex / 9)]?.[cellIndex % 9] || ''"
                     />
                 </div>
+                <!-- Loading skeleton overlay (sits on top of real board) -->
+                <div v-if="isLoading" class="absolute inset-0 grid grid-cols-9 grid-rows-9 border-2 border-emerald-700 dark:border-emerald-300">
+                    <div
+                        v-for="i in 81"
+                        :key="i"
+                        :class="[
+                            {
+                                'border-r-2 border-r-emerald-700 dark:border-r-emerald-300': [2, 5].includes((i - 1) % 9),
+                                'border-b-2 border-b-emerald-700 dark:border-b-emerald-300': [2, 5].includes(Math.floor((i - 1) / 9)),
+                            },
+                            'border border-gray-300 dark:border-gray-500 animate-pulse',
+                            i % 7 === 0 || i % 11 === 0 ? 'bg-gray-200 dark:bg-gray-700' : 'bg-white dark:bg-gray-900',
+                        ]"
+                    />
+                </div>
+                </div>
+            </div>
+            <div class="col-span-1">
+                <div>
+                    <h1 class="text-4xl uppercase font-semibold my-2">{{ t('quickPlay.battleInfo') }}</h1>
+                    <div class="flex items-center gap-2">
+                        <Counter 
+                            progress 
+                            theme="error" 
+                            :title="t('quickPlay.currentWrong')" 
+                            :count="inValidCount" 
+                            :max="caninvalid" 
+                        />
+                        <Counter 
+                            @mouseover="isCheckComplete = true" 
+                            @mouseleave="isCheckComplete = false" 
+                            progress 
+                            theme="success" 
+                            :title="t('quickPlay.currentProgress')" 
+                            :count="Math.abs(countProgress - nullCells)" 
+                            :max="nullCells"
+                            class="cursor-pointer"
+                        />
+                    </div>
+                </div>
+                <Divider title="control" type="default" />
+                <div class="flex flex-row gap-4 mt-4">
+                    <Button class="uppercase font-medium" type="danger" @click="handlePopup">{{ t('quickPlay.newGame') }}</Button>
+                    <Button class="uppercase font-medium" type="warning" @click="resetFocus">{{ t('quickPlay.clearAnswer') }}</Button>
+                </div>
+
+                
             </div>
         </div>
-        <div class="col-span-1">
-            <div>
-                <h1 class="text-4xl uppercase font-semibold my-2">Battle information</h1>
-                <div class="flex items-center gap-2">
-                    <Counter 
-                        progress 
-                        theme="error" 
-                        title="Current wrong" 
-                        :count="inValidCount" 
-                        :max="caninvalid" 
-                    />
-                    <Counter 
-                        @mouseover="isCheckComplete = true" 
-                        @mouseleave="isCheckComplete = false" 
-                        progress 
-                        theme="success" 
-                        title="Current progress" 
-                        :count="Math.abs(countProgress - nullCells)" 
-                        :max="nullCells"
-                        class="cursor-pointer"
-                    />
-                </div>
-            </div>
-            <Divider title="control" type="default" />
-            <div class="flex flex-row gap-4 mt-4">
-                <Button class="uppercase font-medium" type="danger" @click="handlePopup">New game</Button>
-                <Button class="uppercase font-medium" type="warning" @click="resetFocus">Clear answer</Button>
-            </div>
-
-            
         </div>
     </div>
 </template>

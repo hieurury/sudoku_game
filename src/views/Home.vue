@@ -7,6 +7,9 @@
     import Button from '../components/ui/Button.vue';
     import Modal from '../components/ui/Modal.vue';
     import Card from '../components/ui/Card.vue';
+    import SettingsModal from '../components/partials/SettingsModal.vue';
+
+    const { t } = useI18n();
 
     const router = useRouter();
 
@@ -40,6 +43,11 @@
         if (gameDifficulty.value) {
             router.push(`/quick-play?difficulty=${gameDifficulty.value}`);
         }
+    }
+    function startCustomGame() {
+        modalVisible.value = false;
+        showCustomPanel.value = false;
+        router.push(`/quick-play?difficulty=custom&nullCells=${customNullCells.value}`);
     }
 </script>
 
