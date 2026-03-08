@@ -3,7 +3,16 @@
     "title": "SUDOKU GAME",
     "continueGame": "Chơi tiếp",
     "newGame": "Làm trận mới",
+    "tower": "Chế độ leo tháp",
     "setting": "Cài đặt",
+    "towerModal": {
+      "title": "Leo Tháp",
+      "completed": "Đã hoàn thành",
+      "continue": "Chơi tiếp",
+      "totalPlays": "Tổng lần chơi",
+      "totalFailures": "Lần thất bại",
+      "totalTime": "Thời gian chơi"
+    },
     "modal": {
       "title": "Chọn độ khó",
       "easy": {
@@ -69,5 +78,24 @@
     "more": {
         "yes": "Có",
         "no": "Không"
+    },
+    "towerPlay": {
+        "level": "Màn",
+        "timeMode": "Thời gian",
+        "wrongMode": "Số sai",
+        "timeLeft": "Thời gian còn",
+        "easy": "Dễ",
+        "medium": "Trung bình",
+        "hard": "Khó",
+        "retry": "Chơi lại",
+        "popup": {
+            "congrats": "CHÚC MỪNG!",
+            "congratsDesc": "Hoàn thành màn chơi! Tiếp tục màn tiếp theo?",
+            "gameOver": "THUA RỒI!",
+            "gameOverDesc": "Bạn đã vượt quá số lần sai tối đa. Chơi lại không?",
+            "timeOutDesc": "Hết thời gian! Chơi lại màn này không?",
+            "exit": "Thoát màn chơi?",
+            "exitDesc": "Tiến trình của bạn sẽ được lưu lại."
+        }
     }
 }

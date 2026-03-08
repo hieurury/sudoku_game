@@ -90,8 +90,20 @@ export const useGameStore = defineStore('game', {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(gameState));
         },
 
-        // Load từ localStorage
-        loadGame(): boolean {
+        // Load - ưu tiên từ file (Tauri), fallback về localStorage
+        async loadGame(): Promise<boolean> {
+            const fileState = await gameFile.loadGame();
+            if (fileState) {
+                this._solutionBoard = fileState._solutionBoard;
+                this.gameBoard = fileState.gameBoard;
+                this.playerBoard = fileState.playerBoard;
+                this.cellStatus = fileState.cellStatus;
+                this.canInvalid = fileState.canInvalid;
+                this.invalidCount = fileState.invalidCount;
+                this.gameDifficulty = fileState.gameDifficulty ?? 'easy';
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(fileState));
+                return true;
+            }
             const saved = localStorage.getItem(STORAGE_KEY);
             if (saved) {
                 try {
@@ -298,17 +310,18 @@ export const useGameStore = defineStore('game', {
         //clear all game state
         clearGameState() {
             localStorage.removeItem(STORAGE_KEY);
+            gameFile.removeGame();
         },
         // Reset game
         resetGame(canInvalid: number = 3, gameDifficulty: GameDifficulty = 'easy') {
-            localStorage.removeItem(STORAGE_KEY);
+            this.clearGameState();
             this.newGame(canInvalid, gameDifficulty);
             this.clearFocus();
         },
 
         // Khởi tạo game
-        initGame(canInvalid: number = 3, gameDifficulty: GameDifficulty = 'easy') {
-            if (!this.loadGame()) {
+        async initGame(canInvalid: number = 3, gameDifficulty: GameDifficulty = 'easy') {
+            if (!await this.loadGame()) {
                 this.newGame(canInvalid, gameDifficulty);
             }
         },
@@ -346,7 +359,7 @@ export const useGameStore = defineStore('game', {
         },
 
         resetGameCustom(canInvalid: number = 3, nullCells: number = 35) {
-            localStorage.removeItem(STORAGE_KEY);
+            this.clearGameState();
             this.newGameCustom(canInvalid, nullCells);
             this.clearFocus();
         },

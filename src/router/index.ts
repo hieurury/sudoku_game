@@ -1,10 +1,10 @@
 import { createWebHistory, createRouter } from "vue-router";
 
 //layouts
-import MainLayout from "../layouts/MainLayout.vue";
 //views
 import Home from "../views/Home.vue";
 import QuickPlay from "../views/QuickPlay.vue";
+import TowerPlay from "../views/TowerPlay.vue";
 
 const routes = [
     {
@@ -16,7 +16,12 @@ const routes = [
         path: "/quick-play",
         name: "QuickPlay",
         component: QuickPlay,
-    }
+    },
+    {
+        path: "/tower-play/:levelId",
+        name: "TowerPlay",
+        component: TowerPlay,
+    },
 ];
 
 const router = createRouter({

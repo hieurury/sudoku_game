@@ -1,9 +1,4 @@
-import {
-  readTextFile,
-  writeTextFile,
-  remove,
-  BaseDirectory
-} from '@tauri-apps/plugin-fs';
+import { writeDataFile, readDataFile, removeDataFile } from '../utils/dataStorage';
 
 const FILE_NAME = 'game_save.json';
 
@@ -17,49 +12,27 @@ export interface GameFileState {
   cellStatus: Status;
   canInvalid: number;
   invalidCount: number;
+  gameDifficulty: 'easy' | 'medium' | 'hard';
 }
 
 export const useGameFile = () => {
-  // Lưu trạng thái game
   const saveGame = async (state: GameFileState) => {
-    const response: any = await writeTextFile(
-      FILE_NAME,
-      JSON.stringify(state),
-      { baseDir: BaseDirectory.AppData }
-    );
-    if(response !instanceof Error) {
-        console.log('Game saved successfully.');
-    }
+    await writeDataFile(FILE_NAME, JSON.stringify(state));
   };
 
-  // Load trạng thái game
   const loadGame = async (): Promise<GameFileState | null> => {
+    const content = await readDataFile(FILE_NAME);
+    if (!content) return null;
     try {
-      const content = await readTextFile(
-        FILE_NAME,
-        { baseDir: BaseDirectory.AppData }
-      );
       return JSON.parse(content) as GameFileState;
     } catch {
       return null;
     }
   };
 
-  // Xoá save
   const removeGame = async () => {
-    try {
-      await remove(
-        FILE_NAME,
-        { baseDir: BaseDirectory.AppData }
-      );
-    } catch {
-      // file không tồn tại → bỏ qua
-    }
+    await removeDataFile(FILE_NAME);
   };
 
-  return {
-    saveGame,
-    loadGame,
-    removeGame
-  };
+  return { saveGame, loadGame, removeGame };
 };

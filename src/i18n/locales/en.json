@@ -3,7 +3,16 @@
     "title": "SUDOKU GAME",
     "continueGame": "Continue Game",
     "newGame": "New Game",
+    "tower": "Tower Mode",
     "setting": "Setting",
+    "towerModal": {
+      "title": "Tower Mode",
+      "completed": "Completed",
+      "continue": "Continue",
+      "totalPlays": "Total Plays",
+      "totalFailures": "Failures",
+      "totalTime": "Play Time"
+    },
     "modal": {
       "title": "Select Difficulty",
       "easy": {
@@ -69,5 +78,24 @@
     "more": {
         "yes": "Yes",
         "no": "No"
+    },
+    "towerPlay": {
+        "level": "Level",
+        "timeMode": "Time",
+        "wrongMode": "Wrong",
+        "timeLeft": "Time Left",
+        "easy": "Easy",
+        "medium": "Medium",
+        "hard": "Hard",
+        "retry": "Retry",
+        "popup": {
+            "congrats": "CONGRATULATIONS!",
+            "congratsDesc": "Level complete! Continue to next level?",
+            "gameOver": "GAME OVER!",
+            "gameOverDesc": "You exceeded the max wrong moves. Retry?",
+            "timeOutDesc": "Time is up! Retry this level?",
+            "exit": "Exit level?",
+            "exitDesc": "Your progress will be saved."
+        }
     }
 }

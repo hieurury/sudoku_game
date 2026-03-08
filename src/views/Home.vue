@@ -3,6 +3,8 @@
     import { useRouter } from 'vue-router';
     import { Icon } from '@iconify/vue';
     import { useI18n } from 'vue-i18n';
+    import { useTowerProgress } from '../stores/useTowerProgress';
+    import type { TowerLevelState } from '../stores/useTowerProgress';
     //components
     import Button from '../components/ui/Button.vue';
     import Modal from '../components/ui/Modal.vue';
@@ -10,8 +12,8 @@
     import SettingsModal from '../components/partials/SettingsModal.vue';
 
     const { t } = useI18n();
-
     const router = useRouter();
+    const towerProgress = useTowerProgress();
 
     const modalVisible = ref(false);
     const settingsVisible = ref(false);
@@ -49,6 +51,56 @@
         showCustomPanel.value = false;
         router.push(`/quick-play?difficulty=custom&nullCells=${customNullCells.value}`);
     }
+
+    // ── Tower mode ────────────────────────────────────────────────────────────
+    const towerModalVisible = ref(false);
+    const levelsData = ref<TowerLevelState[]>([]);
+    const levelsLoading = ref(false);
+
+    async function openTowerModal() {
+        towerModalVisible.value = true;
+        if (levelsData.value.length > 0) return;
+        levelsLoading.value = true;
+        try {
+            const mods = await Promise.all(
+                Array.from({ length: 20 }, (_, i) =>
+                    import(`../data/game/game_${i + 1}.json`)
+                )
+            );
+            levelsData.value = mods.map(m => m.default as TowerLevelState);
+        } finally {
+            levelsLoading.value = false;
+        }
+    }
+
+    function closeTowerModal() {
+        towerModalVisible.value = false;
+    }
+
+    function playTowerLevel(levelNum: number) {
+        closeTowerModal();
+        router.push(`/tower-play/${levelNum}`);
+    }
+
+    function continueTower() {
+        const lp = towerProgress.lastPlayed;
+        if (lp) {
+            closeTowerModal();
+            router.push(`/tower-play/${lp.levelId}`);
+        }
+    }
+
+    function getLevelDifficulty(level: TowerLevelState): { label: string; color: string; bars: number } {
+        const n = level.null_cell;
+        const isTime = level.type === 'time';
+        if ((!isTime && n <= 30) || (isTime && n <= 25)) {
+            return { label: t('towerPlay.easy'), color: 'bg-emerald-500', bars: 1 };
+        }
+        if ((!isTime && n <= 38) || (isTime && n <= 36)) {
+            return { label: t('towerPlay.medium'), color: 'bg-yellow-500', bars: 2 };
+        }
+        return { label: t('towerPlay.hard'), color: 'bg-red-500', bars: 3 };
+    }
 </script>
 
 <template>
@@ -57,17 +109,27 @@
         <div class="flex justify-center items-center flex-col">
             <div class="flex flex-col gap-2">
                 <Button 
+                class="w-64 text-xl flex items-center justify-center"
                 v-if="continueGameBtn"
                 @click="continueGame"
                 >Continue game</Button>
                 <Button
-                class="w-64 text-2xl flex items-center justify-center"
+                class="w-64 text-xl flex items-center justify-center"
                 type="danger"
                 @click="startNewGame"
                 >
                 <Icon icon="material-symbols-light:play-arrow-rounded" width="32" height="32" />
                 <h3>{{ t('home.newGame') }}</h3>
             </Button>
+                <!-- Tower button -->
+                <Button
+                    class="w-64 text-xl flex items-center justify-center gap-1"
+                    type="primary"
+                    @click="openTowerModal"
+                >
+                    <Icon icon="material-symbols-light:trophy-outline-rounded" width="28" height="28" />
+                    <h3>{{ t('home.tower') }}</h3>
+                </Button>
             </div>
             <div class="border w-full my-4"></div>
             <Button size="none" class="border-2 w-full flex items-center justify-center px-4 py-1 bg-emerald-500 text-white border-black cursor-pointer" @click="settingsVisible = true">
@@ -180,6 +242,119 @@
                 </div>
             </template>
         </Modal>
+
+        <!-- Tower Level Selection Modal -->
+        <div
+            v-if="towerModalVisible"
+            @click="closeTowerModal"
+            class="fixed inset-0 flex justify-center items-center bg-black/20 z-50 p-4"
+        >
+            <div
+                @click.stop
+                class="border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-950 shadow-[6px_6px_0px_rgba(0,0,0,0.25)] dark:shadow-[6px_6px_0px_rgba(255,255,255,0.08)] px-6 py-6 w-full max-w-3xl max-h-[90vh] flex flex-col"
+            >
+                <!-- header -->
+                <div class="flex items-center justify-between mb-4 gap-4">
+                    <div>
+                        <h2 class="text-3xl uppercase font-bold tracking-widest dark:text-white flex items-center gap-2">
+                            <Icon icon="material-symbols-light:trophy-outline-rounded" width="32" height="32" class="text-yellow-500" />
+                            {{ t('home.towerModal.title') }}
+                        </h2>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                            {{ t('home.towerModal.completed') }}: {{ towerProgress.completedCount }} / 20
+                        </p>
+                    </div>
+                    <button
+                        @click="closeTowerModal"
+                        class="text-gray-400 hover:text-gray-800 dark:hover:text-white text-2xl leading-none cursor-pointer transition-colors"
+                    >✕</button>
+                </div>
+
+                <!-- Continue button -->
+                <div v-if="towerProgress.hasLastPlayed" class="mb-4">
+                    <button
+                        @click="continueTower"
+                        class="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-500 hover:bg-blue-600 text-white font-bold uppercase tracking-widest text-sm transition-colors cursor-pointer border-2 border-blue-600"
+                    >
+                        <Icon icon="material-symbols-light:play-circle-outline" width="22" height="22" />
+                        {{ t('home.towerModal.continue') }} — {{ t('towerPlay.level') }} {{ towerProgress.lastPlayed?.levelId }}
+                    </button>
+                </div>
+
+                <!-- Loading -->
+                <div v-if="levelsLoading" class="flex justify-center items-center py-12">
+                    <Icon icon="material-symbols-light:progress-activity" width="48" height="48" class="animate-spin dark:text-white" />
+                </div>
+
+                <!-- Level grid -->
+                <div v-else class="overflow-y-auto flex-1">
+                    <div class="grid grid-cols-4 sm:grid-cols-5 gap-2">
+                        <template v-for="(level, idx) in levelsData" :key="level.id">
+                            <div
+                                :class="[
+                                    'relative border-2 p-2 flex flex-col items-center justify-center gap-1 transition-all duration-150 select-none',
+                                    towerProgress.isLevelCompleted(level.id)
+                                        ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 cursor-pointer hover:-translate-y-0.5'
+                                        : towerProgress.isLevelUnlocked(level)
+                                            ? 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 cursor-pointer hover:border-blue-400 hover:-translate-y-0.5'
+                                            : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 cursor-not-allowed opacity-50'
+                                ]"
+                                @click="towerProgress.isLevelUnlocked(level) ? playTowerLevel(idx + 1) : undefined"
+                            >
+                                <span class="text-xl font-bold dark:text-white tabular-nums">{{ String(idx + 1).padStart(2,'0') }}</span>
+                                <div class="flex gap-0.5 items-end h-4">
+                                    <span
+                                        v-for="b in 3"
+                                        :key="b"
+                                        :class="[
+                                            'w-1.5',
+                                            b <= getLevelDifficulty(level).bars ? getLevelDifficulty(level).color : 'bg-gray-200 dark:bg-gray-700',
+                                            b === 1 ? 'h-1.5' : b === 2 ? 'h-2.5' : 'h-4',
+                                        ]"
+                                    />
+                                </div>
+                                <span
+                                    :class="[
+                                        'text-xs font-bold uppercase tracking-widest px-1',
+                                        level.type === 'time' ? 'text-blue-500' : 'text-red-500'
+                                    ]"
+                                >
+                                    {{ level.type === 'time' ? '⏱' : '✗' }}
+                                </span>
+                                <Icon
+                                    v-if="towerProgress.isLevelCompleted(level.id)"
+                                    icon="material-symbols-light:check-circle-rounded"
+                                    width="16" height="16"
+                                    class="absolute top-1 right-1 text-emerald-500"
+                                />
+                                <Icon
+                                    v-else-if="!towerProgress.isLevelUnlocked(level)"
+                                    icon="material-symbols-light:lock-outline"
+                                    width="16" height="16"
+                                    class="absolute top-1 right-1 text-gray-400"
+                                />
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- stats footer -->
+                <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 grid grid-cols-3 gap-2 text-center text-xs text-gray-500 dark:text-gray-400">
+                    <div>
+                        <div class="font-bold text-base dark:text-white">{{ towerProgress.totalPlays }}</div>
+                        <div class="uppercase tracking-widest">{{ t('home.towerModal.totalPlays') }}</div>
+                    </div>
+                    <div>
+                        <div class="font-bold text-base dark:text-white">{{ towerProgress.totalFailures }}</div>
+                        <div class="uppercase tracking-widest">{{ t('home.towerModal.totalFailures') }}</div>
+                    </div>
+                    <div>
+                        <div class="font-bold text-base dark:text-white">{{ Math.floor(towerProgress.totalPlayTime / 60) }}m {{ towerProgress.totalPlayTime % 60 }}s</div>
+                        <div class="uppercase tracking-widest">{{ t('home.towerModal.totalTime') }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 

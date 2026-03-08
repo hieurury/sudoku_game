@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { onMounted, watch, ref, computed } from 'vue';
 import { useGameStore } from '../stores/useGameState';
-import { useGameFile } from '../stores/useGameFile';
 import { storeToRefs } from 'pinia';
 import { useRouter, useRoute } from 'vue-router';
 import { loadSound, playSound } from '../utils/sound';
@@ -18,7 +17,6 @@ import SettingsModal from '../components/partials/SettingsModal.vue';
 const { t } = useI18n();
 
 const gameStore = useGameStore();
-const gameFile = useGameFile();
 const { gameBoard, playerBoard, currentFocus, cellStatus } = storeToRefs(gameStore);
 const router = useRouter();
 const route = useRoute();
@@ -68,11 +66,11 @@ onMounted(() => {
     loadSound('gameOver', '/sounds/game_over.mp3');
     loadSound('gameWin', '/sounds/game_win.mp3');
     isLoading.value = true;
-    setTimeout(() => {
+    setTimeout(async () => {
         if (isCustomMode.value) {
             gameStore.newGameCustom(3, customNullCells.value);
         } else {
-            gameStore.initGame(3, gameDifficulty.value);
+            await gameStore.initGame(3, gameDifficulty.value);
         }
         loadGameCounter();
         isLoading.value = false;
@@ -121,10 +119,6 @@ function handleFocus(e: FocusEvent) {
         const data = JSON.parse(record);
         gameStore.setFocus(data);
     }
-}
-
-function handleFocusOut(e: FocusEvent) {
-    gameStore.clearFocus();
 }
 
 function resetFocus() {

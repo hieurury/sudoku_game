@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted } from 'vue';
 import { Icon } from '@iconify/vue';
 import { useThemes } from '../../stores/useThemes';
 import { storeToRefs } from 'pinia';
