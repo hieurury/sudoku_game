@@ -4,16 +4,19 @@
     import { Icon } from '@iconify/vue';
     import { useI18n } from 'vue-i18n';
     import { useTowerProgress } from '../stores/useTowerProgress';
+    import { useGameStore } from '../stores/useGameState';
     import type { TowerLevelState } from '../stores/useTowerProgress';
     //components
     import Button from '../components/ui/Button.vue';
     import Modal from '../components/ui/Modal.vue';
     import Card from '../components/ui/Card.vue';
+    import Badge from '../components/ui/Badge.vue';
     import SettingsModal from '../components/partials/SettingsModal.vue';
 
     const { t } = useI18n();
     const router = useRouter();
     const towerProgress = useTowerProgress();
+    const gameStore = useGameStore();
 
     const modalVisible = ref(false);
     const settingsVisible = ref(false);
@@ -35,9 +38,16 @@
     const continueGameBtn = computed(() => {
         return !!localStorage.getItem('sudoku_game_state');
     });
+    const continueBadge = computed(() => {
+        const d = gameDifficulty.value;
+        if (d === 'easy')   return { title: t('home.modal.easy.title'),   theme: 'success' as const };
+        if (d === 'medium') return { title: t('home.modal.medium.title'), theme: 'warning' as const };
+        if (d === 'hard')   return { title: t('home.modal.hard.title'),   theme: 'danger'  as const };
+        return null;
+    });
 
     function startNewGame() {
-        localStorage.removeItem('sudoku_game_state');
+        gameStore.clearGameState();
         showCustomPanel.value = false;
         modalVisible.value = true;
     }
@@ -108,11 +118,16 @@
         <h1 class="text-7xl uppercase font-semibold dark:text-gray-300 tracking-wider">{{ t('home.title') }}</h1>
         <div class="flex justify-center items-center flex-col">
             <div class="flex flex-col gap-2">
-                <Button 
-                class="w-64 text-xl flex items-center justify-center"
-                v-if="continueGameBtn"
-                @click="continueGame"
-                >Continue game</Button>
+                <Badge
+                    v-if="continueGameBtn && continueBadge"
+                    :title="continueBadge!.title"
+                    :theme="continueBadge!.theme"
+                >
+                    <Button
+                        class="w-64 text-xl flex items-center justify-center"
+                        @click="continueGame"
+                    >Continue game</Button>
+                </Badge>
                 <Button
                 class="w-64 text-xl flex items-center justify-center"
                 type="danger"
@@ -286,54 +301,59 @@
                     <Icon icon="material-symbols-light:progress-activity" width="48" height="48" class="animate-spin dark:text-white" />
                 </div>
 
-                <!-- Level grid -->
-                <div v-else class="overflow-y-auto flex-1">
-                    <div class="grid grid-cols-4 sm:grid-cols-5 gap-2">
+                <!-- Level timeline - horizontal zigzag scroll -->
+                <div v-else class="flex-1 overflow-x-auto overflow-y-hidden">
+                    <div class="flex flex-row items-center px-6" style="min-width: max-content; height: 180px;">
                         <template v-for="(level, idx) in levelsData" :key="level.id">
+                            <!-- Node -->
                             <div
                                 :class="[
-                                    'relative border-2 p-2 flex flex-col items-center justify-center gap-1 transition-all duration-150 select-none',
+                                    'relative border-2 p-2 flex flex-col items-center justify-center gap-1 transition-all duration-150 select-none shrink-0',
+                                    'w-[68px]',
+                                    idx % 2 === 0 ? '-translate-y-[38px]' : 'translate-y-[38px]',
                                     towerProgress.isLevelCompleted(level.id)
-                                        ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 cursor-pointer hover:-translate-y-0.5'
+                                        ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 cursor-pointer hover:scale-105'
                                         : towerProgress.isLevelUnlocked(level)
-                                            ? 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 cursor-pointer hover:border-blue-400 hover:-translate-y-0.5'
+                                            ? 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 cursor-pointer hover:border-blue-400 hover:scale-105'
                                             : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 cursor-not-allowed opacity-50'
                                 ]"
                                 @click="towerProgress.isLevelUnlocked(level) ? playTowerLevel(idx + 1) : undefined"
                             >
-                                <span class="text-xl font-bold dark:text-white tabular-nums">{{ String(idx + 1).padStart(2,'0') }}</span>
-                                <div class="flex gap-0.5 items-end h-4">
+                                <span class="text-base font-bold dark:text-white tabular-nums leading-none">{{ String(idx + 1).padStart(2,'0') }}</span>
+                                <div class="flex gap-0.5 items-end h-3 mt-0.5">
                                     <span
-                                        v-for="b in 3"
-                                        :key="b"
+                                        v-for="b in 3" :key="b"
                                         :class="[
                                             'w-1.5',
                                             b <= getLevelDifficulty(level).bars ? getLevelDifficulty(level).color : 'bg-gray-200 dark:bg-gray-700',
-                                            b === 1 ? 'h-1.5' : b === 2 ? 'h-2.5' : 'h-4',
+                                            b === 1 ? 'h-1' : b === 2 ? 'h-2' : 'h-3',
                                         ]"
                                     />
                                 </div>
-                                <span
-                                    :class="[
-                                        'text-xs font-bold uppercase tracking-widest px-1',
-                                        level.type === 'time' ? 'text-blue-500' : 'text-red-500'
-                                    ]"
-                                >
+                                <span :class="['text-[10px] font-bold leading-none mt-0.5', level.type === 'time' ? 'text-blue-500' : 'text-red-500']">
                                     {{ level.type === 'time' ? '⏱' : '✗' }}
                                 </span>
                                 <Icon
                                     v-if="towerProgress.isLevelCompleted(level.id)"
                                     icon="material-symbols-light:check-circle-rounded"
-                                    width="16" height="16"
-                                    class="absolute top-1 right-1 text-emerald-500"
+                                    width="13" height="13"
+                                    class="absolute top-0.5 right-0.5 text-emerald-500"
                                 />
                                 <Icon
                                     v-else-if="!towerProgress.isLevelUnlocked(level)"
                                     icon="material-symbols-light:lock-outline"
-                                    width="16" height="16"
-                                    class="absolute top-1 right-1 text-gray-400"
+                                    width="13" height="13"
+                                    class="absolute top-0.5 right-0.5 text-gray-400"
                                 />
                             </div>
+
+                            <!-- Diagonal connector -->
+                            <div
+                                v-if="idx < levelsData.length - 1"
+                                class="shrink-0 h-px bg-gray-300 dark:bg-gray-600"
+                                :class="idx % 2 === 0 ? 'zigzag-down' : 'zigzag-up'"
+                                style="width: 44px;"
+                            />
                         </template>
                     </div>
                 </div>
@@ -359,6 +379,14 @@
 </template>
 
 <style scoped>
+.zigzag-down {
+    transform: rotate(60deg);
+    transform-origin: left center;
+}
+.zigzag-up {
+    transform: rotate(-60deg);
+    transform-origin: left center;
+}
 .custom-slider {
     -webkit-appearance: none;
     appearance: none;

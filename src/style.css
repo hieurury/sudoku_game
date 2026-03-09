@@ -17,3 +17,8 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @apply dark:bg-slate-800/90 dark:text-gray-300;
+
+body {
+  min-width: 820px;
+  overflow-x: auto;
+}

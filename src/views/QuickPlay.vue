@@ -213,7 +213,7 @@ watch(currentFocus, (newVal) => {
     </div>
     <div class="min-h-screen flex flex-col pt-8 dark:bg-black/90 bg-white">
         <div class="flex-1 flex items-center justify-center p-6">
-        <div class="grid lg:grid-cols-2 gap-16 p-4">
+        <div class="grid grid-cols-2 gap-12 p-4 min-w-[820px]">
             <div class="col-span-1">
                 <div class="w-7/8 mx-auto aspect-square relative">
                 <!-- Real board (always in DOM) -->
@@ -231,7 +231,7 @@ watch(currentFocus, (newVal) => {
                                     (currentFocus.row === Math.floor(cellIndex / 9) || currentFocus.col === cellIndex % 9),
                                 'bg-emerald-500! text-white!': cell === 0 && isCheckComplete,
                             },
-                            'text-3xl lg:text-4xl font-medium flex items-center border border-gray-300 dark:border-gray-500 justify-center text-center focus:outline-none aspect-square w-full',
+                            'text-3xl font-medium flex items-center border border-gray-300 dark:border-gray-500 justify-center text-center focus:outline-none aspect-square w-full',
                             'focus:caret-transparent cursor-pointer dark:focus:bg-gray-200 dark:focus:text-black focus:text-gray-300 focus:bg-slate-800/90',
                         ]"
                         :record="JSON.stringify({ row: Math.floor(cellIndex / 9), col: cellIndex % 9 })"
