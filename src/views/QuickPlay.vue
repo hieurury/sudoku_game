@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, watch, ref, computed } from 'vue';
+import { onMounted, onBeforeUnmount, watch, ref, computed } from 'vue';
 import { useGameStore } from '../stores/useGameState';
 import { storeToRefs } from 'pinia';
 import { useRouter, useRoute } from 'vue-router';
@@ -28,6 +28,7 @@ const countProgress = ref<number>(0);
 const nullCells = ref<number>(0);
 const isCheckComplete = ref<boolean>(false);
 const isLoading = ref<boolean>(false);
+const finalPlayerBoard = ref<number[][]>(Array.from({ length: 9 }, () => Array(9).fill(0)));
 //popup control
 const popupVisible = ref<boolean>(false);
 const popupTitle = ref<string>('');
@@ -59,6 +60,11 @@ const quickDifficultyLabel = computed<string>(() => {
 const quickSessionTitle = computed<string>(() => {
     return t('quickPlay.sessionTitle', { difficulty: quickDifficultyLabel.value });
 });
+const solutionBoard = computed<number[][]>(() => gameStore.$state._solutionBoard);
+
+function cloneBoard(board: number[][]): number[][] {
+    return board.map((row) => [...row]);
+}
 
 function runWithLoading(fn: () => void) {
     isLoading.value = true;
@@ -84,10 +90,16 @@ onMounted(() => {
         loadGameCounter();
         isLoading.value = false;
     }, 50);
+    document.addEventListener('click', handleDocumentClick, true);
+});
+
+onBeforeUnmount(() => {
+    document.removeEventListener('click', handleDocumentClick, true);
 });
 
 function newGame() {
     resetFocus();
+    finalPlayerBoard.value = Array.from({ length: 9 }, () => Array(9).fill(0));
     runWithLoading(() => {
         if (isCustomMode.value) {
             gameStore.newGameCustom(3, customNullCells.value);
@@ -121,6 +133,16 @@ function handleInput(e: InputEvent) {
     }
 }
 
+function handleDocumentClick(event: MouseEvent) {
+    const target = event.target as HTMLElement | null;
+    if (!target) return;
+
+    // If user clicks outside of a board input cell, remove current focus highlight.
+    const cellInput = target.closest('input[record]');
+    if (!cellInput) {
+        gameStore.clearFocus();
+    }
+}
 function handleFocus(e: FocusEvent) {
     const target = e.target as HTMLInputElement;
     const record = target.getAttribute('record');
@@ -130,12 +152,37 @@ function handleFocus(e: FocusEvent) {
     }
 }
 
+function handleBlur() {
+    gameStore.clearFocus();
+}
+
 function resetFocus() {
     gameStore.clearPlayerBoard();
+    gameStore.clearFocus();
+}
+
+function markGameFinished() {
+    finalPlayerBoard.value = cloneBoard(playerBoard.value);
+    gameStore.clearFocus();
+}
+
+function isResultCorrectCell(row: number, col: number, cell: number): boolean {
+    if (cell !== 0) return false;
+    return finalPlayerBoard.value[row]?.[col] === solutionBoard.value[row]?.[col];
+}
+
+function isResultWrongOrMissingCell(row: number, col: number, cell: number): boolean {
+    if (cell !== 0) return false;
+    return finalPlayerBoard.value[row]?.[col] !== solutionBoard.value[row]?.[col];
+}
+
+function getResultCellValue(row: number, col: number): number | '' {
+    return solutionBoard.value[row]?.[col] || '';
 }
 
 //lúc win
 function handleWin() {
+    markGameFinished();
     popupTitle.value = t('quickPlay.popup.congrats');
     popupDescription.value = t('quickPlay.popup.congratsDesc');
     popupPositive.value = newGame;
@@ -149,6 +196,7 @@ function handleWin() {
 
 //lúc thua
 function handleLose() {
+    markGameFinished();
     popupTitle.value = t('quickPlay.popup.gameOver');
     popupDescription.value = t('quickPlay.popup.gameOverDesc');
     popupPositive.value = newGame;
@@ -203,7 +251,35 @@ watch(currentFocus, (newVal) => {
     :description="popupDescription"
     @positive="popupPositive"
     @negative="popupNegative"
-    />
+    >
+        <div
+            v-if="finalPlayerBoard.flat().some((cell) => cell !== 0)"
+            class="mx-auto my-2 w-[260px] sm:w-[290px]"
+        >
+            <div class="grid grid-cols-9 grid-rows-9 border-2 border-emerald-700 dark:border-emerald-300">
+                <div
+                    v-for="(cell, cellIndex) in gameBoard.flat()"
+                    :key="`popup-cell-${cellIndex}`"
+                    :class="[
+                        {
+                            'border-r-2 border-r-emerald-700 dark:border-r-emerald-300': [2, 5].includes(cellIndex % 9),
+                            'border-b-2 border-b-emerald-700 dark:border-b-emerald-300': [2, 5].includes(Math.floor(cellIndex / 9)),
+                            'bg-green-500 text-white': isResultCorrectCell(Math.floor(cellIndex / 9), cellIndex % 9, cell),
+                            'bg-red-500 text-white': isResultWrongOrMissingCell(Math.floor(cellIndex / 9), cellIndex % 9, cell),
+                            'bg-slate-100 dark:bg-slate-700': cell !== 0,
+                        },
+                        'aspect-square border border-gray-300 dark:border-gray-500 flex items-center justify-center text-sm sm:text-base font-semibold select-none'
+                    ]"
+                >
+                    {{ getResultCellValue(Math.floor(cellIndex / 9), cellIndex % 9) }}
+                </div>
+            </div>
+            <div class="mt-2 flex items-center justify-center gap-3 text-xs sm:text-sm">
+                <span class="inline-flex items-center gap-1"><i class="w-3 h-3 bg-green-500 rounded-sm"></i>Đúng</span>
+                <span class="inline-flex items-center gap-1"><i class="w-3 h-3 bg-red-500 rounded-sm"></i>Thiếu/Sai</span>
+            </div>
+        </div>
+    </Popup>
     <SettingsModal v-if="settingsVisible" @close="settingsVisible = false" />
     <!-- Top-right action buttons -->
     <div class="fixed top-4 right-4 z-50 flex items-center gap-2">
@@ -260,6 +336,7 @@ watch(currentFocus, (newVal) => {
                         :record="JSON.stringify({ row: Math.floor(cellIndex / 9), col: cellIndex % 9 })"
                         @input="handleInput($event)"
                         @focus="handleFocus($event)"
+                        @blur="handleBlur"
                         @click="playSound('target')"
                         type="text"
                         maxlength="1"
