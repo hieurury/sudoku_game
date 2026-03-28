@@ -35,6 +35,7 @@
   },
   "quickPlay": {
     "generatingBoard": "Generating board...",
+    "sessionTitle": "Quick Play - {difficulty}",
     "battleInfo": "Battle information",
     "currentWrong": "Current wrong",
     "currentProgress": "Current progress",
@@ -53,7 +54,10 @@
     }
   },
   "header": {
-    "help": "Help"
+    "help": "Help",
+    "brandSubtitle": "Sudoku Game",
+    "switchToVietnamese": "Switch to Vietnamese",
+    "switchToEnglish": "Switch to English"
   },
   "settings": {
     "title": "Settings",
@@ -75,12 +79,17 @@
       "description": "Select your preferred interface language."
     }
   },
+    "common": {
+      "control": "Control",
+      "action": "Action"
+    },
     "more": {
         "yes": "Yes",
         "no": "No"
     },
     "towerPlay": {
         "level": "Level",
+      "sessionTitle": "Tower Climb - Level {level}",
         "timeMode": "Time",
         "wrongMode": "Wrong",
         "timeLeft": "Time Left",

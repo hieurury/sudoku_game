@@ -19,7 +19,7 @@ function toggleLocale() {
         <div>
             <div @click="() => router.push('/')" class="cursor-pointer bg-emerald-500 dark:text-gray-300 text-white px-4 py-1">
                 <h3 class="text-4xl font-semibold">SUKU</h3>
-                <p class="text-sm border-t border-gray-300">Sudoku game</p>
+                <p class="text-sm border-t border-gray-300">{{ t('header.brandSubtitle') }}</p>
             </div>
         </div>
         <div class="flex gap-2 px-4 items-center">
@@ -27,7 +27,7 @@ function toggleLocale() {
             <button
                 @click="toggleLocale"
                 class="px-2 py-1 text-sm font-bold uppercase border border-current rounded-sm hover:bg-emerald-500 hover:text-white hover:border-emerald-500 transition-colors cursor-pointer"
-                :title="locale === 'en' ? 'Switch to Vietnamese' : 'Switch to English'"
+                :title="locale === 'en' ? t('header.switchToVietnamese') : t('header.switchToEnglish')"
             >
                 {{ locale === 'en' ? 'VI' : 'EN' }}
             </button>

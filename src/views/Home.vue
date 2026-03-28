@@ -126,7 +126,7 @@
                     <Button
                         class="w-64 text-xl flex items-center justify-center"
                         @click="continueGame"
-                    >Continue game</Button>
+                    >{{ t('home.continueGame') }}</Button>
                 </Badge>
                 <Button
                 class="w-64 text-xl flex items-center justify-center"

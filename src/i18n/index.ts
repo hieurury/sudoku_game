@@ -20,6 +20,8 @@ const i18n = createI18n({
     messages: { en, vi },
 })
 
+document.documentElement.lang = i18n.global.locale.value
+
 export function setLocale(locale: Locale) {
     i18n.global.locale.value = locale
     localStorage.setItem(STORAGE_KEY, locale)

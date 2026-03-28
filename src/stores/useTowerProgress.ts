@@ -41,12 +41,39 @@ const defaultState = (): TowerProgressState => ({
   totalPlayTime: 0,
 });
 
+function normalizeLevelId(levelId: string | number): string {
+  const raw = String(levelId).trim();
+  if (/^\d+$/.test(raw)) {
+    return String(Number(raw)).padStart(3, '0');
+  }
+  return raw;
+}
+
+function normalizeCompletedLevels(
+  completedLevels: Record<string, boolean> | undefined,
+): Record<string, boolean> {
+  if (!completedLevels) return {};
+
+  const normalized: Record<string, boolean> = {};
+  for (const [key, value] of Object.entries(completedLevels)) {
+    if (value !== true) continue;
+    normalized[normalizeLevelId(key)] = true;
+  }
+  return normalized;
+}
+
 export const useTowerProgress = defineStore('towerProgress', {
   state: (): TowerProgressState => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       try {
-        return JSON.parse(saved) as TowerProgressState;
+        const parsed = JSON.parse(saved) as Partial<TowerProgressState>;
+        return {
+          ...defaultState(),
+          ...parsed,
+          completedLevels: normalizeCompletedLevels(parsed.completedLevels),
+          lastPlayed: parsed.lastPlayed ?? null,
+        };
       } catch {
         return defaultState();
       }
@@ -73,19 +100,19 @@ export const useTowerProgress = defineStore('towerProgress', {
         const content = await readDataFile(FILE_NAME);
         if (!content) return;
         const data = JSON.parse(content) as TowerProgressState;
-        this.completedLevels = data.completedLevels ?? {};
+        this.completedLevels = normalizeCompletedLevels(data.completedLevels);
         this.lastPlayed = data.lastPlayed ?? null;
         this.totalPlays = data.totalPlays ?? 0;
         this.totalFailures = data.totalFailures ?? 0;
         this.totalPlayTime = data.totalPlayTime ?? 0;
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        this._persist();
       } catch {
         // file doesn't exist yet, use localStorage state
       }
     },
 
     markCompleted(levelId: string) {
-      this.completedLevels[levelId] = true;
+      this.completedLevels[normalizeLevelId(levelId)] = true;
       this._persist();
     },
 
@@ -116,11 +143,13 @@ export const useTowerProgress = defineStore('towerProgress', {
 
     isLevelUnlocked(level: TowerLevelState): boolean {
       if (!level.unlock_condition || level.unlock_condition.length === 0) return true;
-      return level.unlock_condition.every((id) => this.completedLevels[id] === true);
+      return level.unlock_condition.every(
+        (id) => this.completedLevels[normalizeLevelId(id)] === true,
+      );
     },
 
     isLevelCompleted(levelId: string): boolean {
-      return this.completedLevels[levelId] === true;
+      return this.completedLevels[normalizeLevelId(levelId)] === true;
     },
   },
 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const {
-    title = 'Modal Title',
+    title = '',
 } = defineProps<{
     title?: string;
 }>();

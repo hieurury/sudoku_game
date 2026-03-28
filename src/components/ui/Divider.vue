@@ -1,6 +1,6 @@
 <script setup lang="ts">
     const {
-        title = 'information',
+        title = '',
         type = 'info'
     } = defineProps<{
         title?: string;

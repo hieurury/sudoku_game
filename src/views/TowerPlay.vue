@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, computed } from 'vue';
+import { onMounted, onUnmounted, ref, computed, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { Icon } from '@iconify/vue';
@@ -249,6 +249,11 @@ function handleFocusOut() {
     currentFocusLocal.value = null;
 }
 
+function isInSameBox(row: number, col: number, focusRow: number, focusCol: number): boolean {
+    return Math.floor(row / 3) === Math.floor(focusRow / 3)
+        && Math.floor(col / 3) === Math.floor(focusCol / 3);
+}
+
 function clearAnswers() {
     playerBoard.value = gameBoard.value.map(r => [...r]);
     invalidCount.value = 0;
@@ -268,8 +273,13 @@ function handleWin() {
     popupTitle.value = t('towerPlay.popup.congrats');
     popupDescription.value = t('towerPlay.popup.congratsDesc');
     popupPositive.value = () => {
-        const next = String(Number(levelId.value) + 1);
-        router.push(`/tower-play/${next}`);
+        popupVisible.value = false;
+        const next = Number(levelId.value) + 1;
+        if (next <= 20) {
+            router.push(`/tower-play/${next}`);
+            return;
+        }
+        router.push('/');
     };
     popupNegative.value = () => router.push('/');
     popupVisible.value = true;
@@ -332,6 +342,14 @@ onMounted(async () => {
     await loadLevel(shouldResume ? lp : undefined);
 });
 
+watch(levelId, async (nextLevelId, prevLevelId) => {
+    if (nextLevelId === prevLevelId) return;
+    popupVisible.value = false;
+    const lp = towerProgress.lastPlayed;
+    const shouldResume = lp && lp.levelId === nextLevelId;
+    await loadLevel(shouldResume ? lp : undefined);
+});
+
 onUnmounted(() => {
     stopTimer();
 });
@@ -386,7 +404,16 @@ onUnmounted(() => {
                                         'text-red-500!': boardCellStatus[Math.floor(cellIndex / 9)]?.[cellIndex % 9] === false,
                                         'bg-gray-400/90 dark:bg-gray-300/20':
                                             currentFocusLocal &&
-                                            (currentFocusLocal.row === Math.floor(cellIndex / 9) || currentFocusLocal.col === cellIndex % 9),
+                                            (
+                                                currentFocusLocal.row === Math.floor(cellIndex / 9)
+                                                || currentFocusLocal.col === cellIndex % 9
+                                                || isInSameBox(
+                                                    Math.floor(cellIndex / 9),
+                                                    cellIndex % 9,
+                                                    currentFocusLocal.row,
+                                                    currentFocusLocal.col,
+                                                )
+                                            ),
                                         'bg-emerald-500! text-white!': cell === 0 && isCheckComplete,
                                     },
                                     'text-3xl font-medium flex items-center border border-gray-300 dark:border-gray-500 justify-center text-center focus:outline-none aspect-square w-full',
@@ -426,7 +453,7 @@ onUnmounted(() => {
                     <!-- Level badge -->
                     <div class="flex items-center gap-3 mb-2">
                         <span class="text-lg uppercase tracking-widest font-bold text-gray-500 dark:text-gray-400">
-                            {{ t('towerPlay.level') }} {{ levelId }}
+                            {{ t('towerPlay.sessionTitle') }} {{ levelId }}
                         </span>
                         <span v-if="isTimeMode" class="px-2 py-0.5 bg-blue-500 text-white text-xs font-bold uppercase tracking-widest">
                             {{ t('towerPlay.timeMode') }}
@@ -476,7 +503,7 @@ onUnmounted(() => {
                         >{{ timerDisplay }}</span>
                     </div>
 
-                    <Divider title="control" type="default" />
+                    <Divider :title="t('common.control')" type="default" />
 
                     <div class="flex flex-row gap-4 mt-4">
                         <Button class="uppercase font-medium" type="danger" @click="handleNewLevel">

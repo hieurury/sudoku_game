@@ -30,8 +30,8 @@ const isCheckComplete = ref<boolean>(false);
 const isLoading = ref<boolean>(false);
 //popup control
 const popupVisible = ref<boolean>(false);
-const popupTitle = ref<string>('Title');
-const popupDescription = ref<string>('Description');
+const popupTitle = ref<string>('');
+const popupDescription = ref<string>('');
 const popupPositive = ref<() => void>(() => {});
 const popupNegative = ref<() => void>(() => {});
 //settings
@@ -49,6 +49,15 @@ const gameDifficulty = computed<GameDifficulty>(() => {
         return difficultyParam as GameDifficulty;
     }
     return 'easy';
+});
+const quickDifficultyLabel = computed<string>(() => {
+    if (isCustomMode.value) return t('home.modal.custom');
+    if (gameDifficulty.value === 'medium') return t('home.modal.medium.title');
+    if (gameDifficulty.value === 'hard') return t('home.modal.hard.title');
+    return t('home.modal.easy.title');
+});
+const quickSessionTitle = computed<string>(() => {
+    return t('quickPlay.sessionTitle', { difficulty: quickDifficultyLabel.value });
 });
 
 function runWithLoading(fn: () => void) {
@@ -177,6 +186,11 @@ function loadGameCounter() {
     nullCells.value = gameStore.getGameNullCell;
 }
 
+function isInSameBox(row: number, col: number, focusRow: number, focusCol: number): boolean {
+    return Math.floor(row / 3) === Math.floor(focusRow / 3)
+        && Math.floor(col / 3) === Math.floor(focusCol / 3);
+}
+
 watch(currentFocus, (newVal) => {
     console.log('Current Focus Changed:', newVal);
 });
@@ -228,7 +242,16 @@ watch(currentFocus, (newVal) => {
                                 'text-red-500!': cellStatus[Math.floor(cellIndex / 9)]?.[cellIndex % 9] === false,
                                 'bg-gray-400/90 dark:bg-gray-300/20':
                                     currentFocus &&
-                                    (currentFocus.row === Math.floor(cellIndex / 9) || currentFocus.col === cellIndex % 9),
+                                    (
+                                        currentFocus.row === Math.floor(cellIndex / 9)
+                                        || currentFocus.col === cellIndex % 9
+                                        || isInSameBox(
+                                            Math.floor(cellIndex / 9),
+                                            cellIndex % 9,
+                                            currentFocus.row,
+                                            currentFocus.col,
+                                        )
+                                    ),
                                 'bg-emerald-500! text-white!': cell === 0 && isCheckComplete,
                             },
                             'text-3xl font-medium flex items-center border border-gray-300 dark:border-gray-500 justify-center text-center focus:outline-none aspect-square w-full',
@@ -263,6 +286,11 @@ watch(currentFocus, (newVal) => {
             </div>
             <div class="col-span-1">
                 <div>
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="text-lg uppercase tracking-widest font-bold text-gray-500 dark:text-gray-400">
+                            {{ quickSessionTitle }}
+                        </span>
+                    </div>
                     <h1 class="text-4xl uppercase font-semibold my-2">{{ t('quickPlay.battleInfo') }}</h1>
                     <div class="flex items-center gap-2">
                         <Counter 
@@ -284,7 +312,7 @@ watch(currentFocus, (newVal) => {
                         />
                     </div>
                 </div>
-                <Divider title="control" type="default" />
+                <Divider :title="t('common.control')" type="default" />
                 <div class="flex flex-row gap-4 mt-4">
                     <Button class="uppercase font-medium" type="danger" @click="handlePopup">{{ t('quickPlay.newGame') }}</Button>
                     <Button class="uppercase font-medium" type="warning" @click="resetFocus">{{ t('quickPlay.clearAnswer') }}</Button>

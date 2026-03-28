@@ -1,6 +1,6 @@
 {
   "home": {
-    "title": "SUDOKU GAME",
+    "title": "TRÒ CHƠI SUDOKU",
     "continueGame": "Chơi tiếp",
     "newGame": "Làm trận mới",
     "tower": "Chế độ leo tháp",
@@ -35,6 +35,7 @@
   },
   "quickPlay": {
     "generatingBoard": "Đang tạo bảng...",
+    "sessionTitle": "Chơi nhanh - {difficulty}",
     "battleInfo": "Thông tin trận đấu",
     "currentWrong": "Số lần sai",
     "currentProgress": "Tiến độ giải",
@@ -53,7 +54,10 @@
     }
   },
   "header": {
-    "help": "Trợ giúp"
+    "help": "Trợ giúp",
+    "brandSubtitle": "Trò chơi Sudoku",
+    "switchToVietnamese": "Chuyển sang tiếng Việt",
+    "switchToEnglish": "Chuyển sang tiếng Anh"
   },
   "settings": {
     "title": "Cài đặt",
@@ -75,12 +79,17 @@
       "description": "Chọn ngôn ngữ hiển thị giao diện."
     }
   },
+    "common": {
+      "control": "Điều khiển",
+      "action": "Hành động"
+    },
     "more": {
         "yes": "Có",
         "no": "Không"
     },
     "towerPlay": {
         "level": "Màn",
+      "sessionTitle": "Leo tháp - Màn {level}",
         "timeMode": "Thời gian",
         "wrongMode": "Số sai",
         "timeLeft": "Thời gian còn",
