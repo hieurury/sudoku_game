@@ -1,6 +1,6 @@
 /**
  * Build script: biên dịch Tauri app và copy artifacts vào
- * D:\Programs\product_results\sudoku-game_@<version>
+ * D:\Programs\Releases\sudoku-game_@<version>
  *
  * Chạy: npm run build:release
  */
@@ -18,7 +18,7 @@ const tauriConf = JSON.parse(readFileSync(join(rootDir, 'src-tauri/tauri.conf.js
 const version = tauriConf.version;
 const productName = tauriConf.productName; // sudoku-game
 
-const outputDir = `D:\\Programs\\product_results\\${productName}_@${version}`;
+const outputDir = `D:\\Programs\\Releases\\${productName}_@${version}`;
 
 console.log(`\n========================================`);
 console.log(` Building ${productName} v${version}`);
@@ -63,14 +63,21 @@ if (copyDir(msiDir, join(outputDir, 'msi'))) {
   copied = true;
 }
 
-// Copy portable exe (nếu tồn tại)
-// Tauri đặt tên exe theo productName (dấu - đổi thành _)
-const exeName = productName.replace(/-/g, '_') + '.exe';
-const exePath = join(rootDir, `src-tauri/target/release/${exeName}`);
-if (existsSync(exePath)) {
+// Copy portable exe (nếu tồn tại).
+// Một số cấu hình Tauri tạo exe theo productName, một số khác theo tên crate (ví dụ: app.exe).
+const exeCandidates = [
+  `${productName.replace(/-/g, '_')}.exe`,
+  `${productName}.exe`,
+  'app.exe',
+];
+
+for (const exeFileName of exeCandidates) {
+  const exePath = join(rootDir, `src-tauri/target/release/${exeFileName}`);
+  if (!existsSync(exePath)) continue;
   copyFileSync(exePath, join(outputDir, `${productName}.exe`));
-  console.log(`✔ Đã copy: ${productName}.exe`);
+  console.log(`✔ Đã copy: ${productName}.exe (from ${exeFileName})`);
   copied = true;
+  break;
 }
 
 if (!copied) {

@@ -6,6 +6,7 @@ import { Icon } from '@iconify/vue';
 import { loadSound, playSound } from '../utils/sound';
 import { useTowerProgress } from '../stores/useTowerProgress';
 import type { TowerLevelState, TowerPlayProgress } from '../stores/useTowerProgress';
+import { loadTowerLevelById, toTowerLevelNumber, getTowerLevelCount } from '../utils/towerLevels';
 
 // components
 import Counter from '../components/ui/Counter.vue';
@@ -19,7 +20,13 @@ const route = useRoute();
 const router = useRouter();
 const towerProgress = useTowerProgress();
 
-const levelId = computed(() => String(route.params.levelId ?? '1'));
+function normalizeRouteLevelId(raw: string | number): string {
+    const levelNum = toTowerLevelNumber(raw);
+    return levelNum === null ? String(raw) : String(levelNum);
+}
+
+const totalTowerLevels = getTowerLevelCount();
+const levelId = computed(() => normalizeRouteLevelId(String(route.params.levelId ?? '1')));
 const levelData = ref<TowerLevelState | null>(null);
 
 // Board state (separate from QuickPlay to avoid conflict)
@@ -55,6 +62,8 @@ const popupTitle = ref('');
 const popupDescription = ref('');
 const popupPositive = ref<() => void>(() => {});
 const popupNegative = ref<() => void>(() => {});
+const popupPositiveLabel = ref<string | undefined>(undefined);
+const popupNegativeLabel = ref<string | undefined>(undefined);
 
 // Settings
 const settingsVisible = ref(false);
@@ -168,8 +177,7 @@ async function loadLevel(resumeProgress?: TowerPlayProgress) {
     isLoading.value = true;
     stopTimer();
     try {
-        const mod = await import(`../data/game/game_${levelId.value}.json`);
-        const data = mod.default as TowerLevelState;
+        const data = await loadTowerLevelById(levelId.value);
         levelData.value = data;
 
         solutionBoard.value = data.board.map(r => [...r]);
@@ -272,16 +280,18 @@ function handleWin() {
 
     popupTitle.value = t('towerPlay.popup.congrats');
     popupDescription.value = t('towerPlay.popup.congratsDesc');
+    popupPositiveLabel.value = t('home.continueGame');
     popupPositive.value = () => {
         popupVisible.value = false;
         const next = Number(levelId.value) + 1;
-        if (next <= 20) {
+        if (next <= totalTowerLevels) {
             router.push(`/tower-play/${next}`);
             return;
         }
         router.push('/');
     };
     popupNegative.value = () => router.push('/');
+    popupNegativeLabel.value = t('quickPlay.exit');
     popupVisible.value = true;
 }
 
@@ -296,6 +306,7 @@ function handleLose() {
     popupDescription.value = isTimeMode.value
         ? t('towerPlay.popup.timeOutDesc')
         : t('towerPlay.popup.gameOverDesc');
+    popupPositiveLabel.value = t('towerPlay.retry');
     popupPositive.value = () => {
         popupVisible.value = false;
         loadLevel();
@@ -304,6 +315,7 @@ function handleLose() {
         towerProgress.clearLastPlayed();
         router.push('/');
     };
+    popupNegativeLabel.value = t('quickPlay.exit');
     popupVisible.value = true;
 }
 
@@ -315,11 +327,13 @@ function handleExit() {
     popupTitle.value = t('towerPlay.popup.exit');
     popupDescription.value = t('towerPlay.popup.exitDesc');
     popupPositive.value = () => router.push('/');
+    popupPositiveLabel.value = undefined;
     popupNegative.value = () => {
         popupVisible.value = false;
         gameSessionStart.value = Date.now();
         if (isTimeMode.value && timeRemaining.value > 0) startTimer();
     };
+    popupNegativeLabel.value = undefined;
     popupVisible.value = true;
 }
 
@@ -338,16 +352,28 @@ onMounted(async () => {
 
     // check if resuming same level
     const lp = towerProgress.lastPlayed;
-    const shouldResume = lp && lp.levelId === levelId.value;
-    await loadLevel(shouldResume ? lp : undefined);
+    const shouldResume = lp && normalizeRouteLevelId(lp.levelId) === levelId.value;
+    try {
+        await loadLevel(shouldResume ? lp : undefined);
+    } catch (error) {
+        console.error('Failed to load tower level', levelId.value, error);
+        towerProgress.clearLastPlayed();
+        router.push('/');
+    }
 });
 
 watch(levelId, async (nextLevelId, prevLevelId) => {
     if (nextLevelId === prevLevelId) return;
     popupVisible.value = false;
     const lp = towerProgress.lastPlayed;
-    const shouldResume = lp && lp.levelId === nextLevelId;
-    await loadLevel(shouldResume ? lp : undefined);
+    const shouldResume = lp && normalizeRouteLevelId(lp.levelId) === nextLevelId;
+    try {
+        await loadLevel(shouldResume ? lp : undefined);
+    } catch (error) {
+        console.error('Failed to load tower level', nextLevelId, error);
+        towerProgress.clearLastPlayed();
+        router.push('/');
+    }
 });
 
 onUnmounted(() => {
@@ -360,6 +386,8 @@ onUnmounted(() => {
         v-if="popupVisible"
         :title="popupTitle"
         :description="popupDescription"
+        :positive-label="popupPositiveLabel"
+        :negative-label="popupNegativeLabel"
         @positive="popupPositive"
         @negative="popupNegative"
     />

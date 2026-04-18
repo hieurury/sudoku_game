@@ -6,6 +6,7 @@
     import { useTowerProgress } from '../stores/useTowerProgress';
     import { useGameStore } from '../stores/useGameState';
     import type { TowerLevelState } from '../stores/useTowerProgress';
+    import { loadTowerLevels, toTowerLevelNumber, getTowerLevelCount } from '../utils/towerLevels';
     //components
     import Button from '../components/ui/Button.vue';
     import Modal from '../components/ui/Modal.vue';
@@ -66,18 +67,17 @@
     const towerModalVisible = ref(false);
     const levelsData = ref<TowerLevelState[]>([]);
     const levelsLoading = ref(false);
+    const totalTowerLevels = getTowerLevelCount();
 
     async function openTowerModal() {
         towerModalVisible.value = true;
         if (levelsData.value.length > 0) return;
         levelsLoading.value = true;
         try {
-            const mods = await Promise.all(
-                Array.from({ length: 20 }, (_, i) =>
-                    import(`../data/game/game_${i + 1}.json`)
-                )
-            );
-            levelsData.value = mods.map(m => m.default as TowerLevelState);
+            levelsData.value = await loadTowerLevels();
+        } catch (error) {
+            console.error('Failed to load tower levels', error);
+            levelsData.value = [];
         } finally {
             levelsLoading.value = false;
         }
@@ -87,7 +87,9 @@
         towerModalVisible.value = false;
     }
 
-    function playTowerLevel(levelNum: number) {
+    function playTowerLevel(levelId: string | number) {
+        const levelNum = toTowerLevelNumber(levelId);
+        if (levelNum === null) return;
         closeTowerModal();
         router.push(`/tower-play/${levelNum}`);
     }
@@ -95,8 +97,10 @@
     function continueTower() {
         const lp = towerProgress.lastPlayed;
         if (lp) {
+            const levelNum = toTowerLevelNumber(lp.levelId);
+            if (levelNum === null) return;
             closeTowerModal();
-            router.push(`/tower-play/${lp.levelId}`);
+            router.push(`/tower-play/${levelNum}`);
         }
     }
 
@@ -276,7 +280,7 @@
                             {{ t('home.towerModal.title') }}
                         </h2>
                         <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                            {{ t('home.towerModal.completed') }}: {{ towerProgress.completedCount }} / 20
+                            {{ t('home.towerModal.completed') }}: {{ towerProgress.completedCount }} / {{ totalTowerLevels }}
                         </p>
                     </div>
                     <button
@@ -317,7 +321,7 @@
                                             ? 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 cursor-pointer hover:border-blue-400 hover:scale-105'
                                             : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 cursor-not-allowed opacity-50'
                                 ]"
-                                @click="towerProgress.isLevelUnlocked(level) ? playTowerLevel(idx + 1) : undefined"
+                                @click="towerProgress.isLevelUnlocked(level) ? playTowerLevel(level.id) : undefined"
                             >
                                 <span class="text-base font-bold dark:text-white tabular-nums leading-none">{{ String(idx + 1).padStart(2,'0') }}</span>
                                 <div class="flex gap-0.5 items-end h-3 mt-0.5">

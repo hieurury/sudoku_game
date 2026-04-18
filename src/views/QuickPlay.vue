@@ -28,13 +28,14 @@ const countProgress = ref<number>(0);
 const nullCells = ref<number>(0);
 const isCheckComplete = ref<boolean>(false);
 const isLoading = ref<boolean>(false);
-const finalPlayerBoard = ref<number[][]>(Array.from({ length: 9 }, () => Array(9).fill(0)));
 //popup control
 const popupVisible = ref<boolean>(false);
 const popupTitle = ref<string>('');
 const popupDescription = ref<string>('');
 const popupPositive = ref<() => void>(() => {});
 const popupNegative = ref<() => void>(() => {});
+const popupPositiveLabel = ref<string | undefined>(undefined);
+const popupNegativeLabel = ref<string | undefined>(undefined);
 //settings
 const settingsVisible = ref<boolean>(false);
 //game settings
@@ -60,11 +61,6 @@ const quickDifficultyLabel = computed<string>(() => {
 const quickSessionTitle = computed<string>(() => {
     return t('quickPlay.sessionTitle', { difficulty: quickDifficultyLabel.value });
 });
-const solutionBoard = computed<number[][]>(() => gameStore.$state._solutionBoard);
-
-function cloneBoard(board: number[][]): number[][] {
-    return board.map((row) => [...row]);
-}
 
 function runWithLoading(fn: () => void) {
     isLoading.value = true;
@@ -99,7 +95,6 @@ onBeforeUnmount(() => {
 
 function newGame() {
     resetFocus();
-    finalPlayerBoard.value = Array.from({ length: 9 }, () => Array(9).fill(0));
     runWithLoading(() => {
         if (isCustomMode.value) {
             gameStore.newGameCustom(3, customNullCells.value);
@@ -159,51 +154,37 @@ function handleBlur() {
 function resetFocus() {
     gameStore.clearPlayerBoard();
     gameStore.clearFocus();
-}
-
-function markGameFinished() {
-    finalPlayerBoard.value = cloneBoard(playerBoard.value);
-    gameStore.clearFocus();
-}
-
-function isResultCorrectCell(row: number, col: number, cell: number): boolean {
-    if (cell !== 0) return false;
-    return finalPlayerBoard.value[row]?.[col] === solutionBoard.value[row]?.[col];
-}
-
-function isResultWrongOrMissingCell(row: number, col: number, cell: number): boolean {
-    if (cell !== 0) return false;
-    return finalPlayerBoard.value[row]?.[col] !== solutionBoard.value[row]?.[col];
-}
-
-function getResultCellValue(row: number, col: number): number | '' {
-    return solutionBoard.value[row]?.[col] || '';
+    loadGameCounter();
 }
 
 //lúc win
 function handleWin() {
-    markGameFinished();
+    gameStore.clearFocus();
     popupTitle.value = t('quickPlay.popup.congrats');
     popupDescription.value = t('quickPlay.popup.congratsDesc');
     popupPositive.value = newGame;
+    popupPositiveLabel.value = t('quickPlay.newGame');
     popupNegative.value = () => {
         gameStore.resetGame(3, gameDifficulty.value);
         router.push('/');
     };
+    popupNegativeLabel.value = t('quickPlay.exit');
     popupVisible.value = true;
     playSound('gameWin');
 }
 
 //lúc thua
 function handleLose() {
-    markGameFinished();
+    gameStore.clearFocus();
     popupTitle.value = t('quickPlay.popup.gameOver');
     popupDescription.value = t('quickPlay.popup.gameOverDesc');
     popupPositive.value = newGame;
+    popupPositiveLabel.value = t('quickPlay.newGame');
     popupNegative.value = () => {
         gameStore.clearGameState();
         router.push('/');
     };
+    popupNegativeLabel.value = t('quickPlay.exit');
     popupVisible.value = true;
     playSound('gameOver');
 }
@@ -213,7 +194,9 @@ function handlePopup() {
     popupTitle.value = t('quickPlay.popup.confirm');
     popupDescription.value = t('quickPlay.popup.confirmDesc');
     popupPositive.value = newGame;
+    popupPositiveLabel.value = undefined;
     popupNegative.value = () => { popupVisible.value = false };
+    popupNegativeLabel.value = undefined;
     popupVisible.value = true;
 }
 
@@ -222,7 +205,9 @@ function handleExit() {
     popupTitle.value = t('quickPlay.popup.exit');
     popupDescription.value = t('quickPlay.popup.exitDesc');
     popupPositive.value = () => { router.push('/'); };
+    popupPositiveLabel.value = undefined;
     popupNegative.value = () => { popupVisible.value = false; };
+    popupNegativeLabel.value = undefined;
     popupVisible.value = true;
 }
 
@@ -249,37 +234,11 @@ watch(currentFocus, (newVal) => {
     v-if="popupVisible"
     :title="popupTitle"
     :description="popupDescription"
+    :positive-label="popupPositiveLabel"
+    :negative-label="popupNegativeLabel"
     @positive="popupPositive"
     @negative="popupNegative"
-    >
-        <div
-            v-if="finalPlayerBoard.flat().some((cell) => cell !== 0)"
-            class="mx-auto my-2 w-[260px] sm:w-[290px]"
-        >
-            <div class="grid grid-cols-9 grid-rows-9 border-2 border-emerald-700 dark:border-emerald-300">
-                <div
-                    v-for="(cell, cellIndex) in gameBoard.flat()"
-                    :key="`popup-cell-${cellIndex}`"
-                    :class="[
-                        {
-                            'border-r-2 border-r-emerald-700 dark:border-r-emerald-300': [2, 5].includes(cellIndex % 9),
-                            'border-b-2 border-b-emerald-700 dark:border-b-emerald-300': [2, 5].includes(Math.floor(cellIndex / 9)),
-                            'bg-green-500 text-white': isResultCorrectCell(Math.floor(cellIndex / 9), cellIndex % 9, cell),
-                            'bg-red-500 text-white': isResultWrongOrMissingCell(Math.floor(cellIndex / 9), cellIndex % 9, cell),
-                            'bg-slate-100 dark:bg-slate-700': cell !== 0,
-                        },
-                        'aspect-square border border-gray-300 dark:border-gray-500 flex items-center justify-center text-sm sm:text-base font-semibold select-none'
-                    ]"
-                >
-                    {{ getResultCellValue(Math.floor(cellIndex / 9), cellIndex % 9) }}
-                </div>
-            </div>
-            <div class="mt-2 flex items-center justify-center gap-3 text-xs sm:text-sm">
-                <span class="inline-flex items-center gap-1"><i class="w-3 h-3 bg-green-500 rounded-sm"></i>Đúng</span>
-                <span class="inline-flex items-center gap-1"><i class="w-3 h-3 bg-red-500 rounded-sm"></i>Thiếu/Sai</span>
-            </div>
-        </div>
-    </Popup>
+    />
     <SettingsModal v-if="settingsVisible" @close="settingsVisible = false" />
     <!-- Top-right action buttons -->
     <div class="fixed top-4 right-4 z-50 flex items-center gap-2">

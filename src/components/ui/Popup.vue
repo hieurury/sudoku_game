@@ -22,6 +22,8 @@ const emit = defineEmits<{
 defineProps<{
     title?: string;
     description?: string;
+    positiveLabel?: string;
+    negativeLabel?: string;
 }>();
 
 function voidClick() {
@@ -45,8 +47,8 @@ function voidClick() {
             </div>
             <Divider :title="t('common.action')" type="warning"/>
             <div class="flex justify-center items-center gap-4">
-                <Button @click.stop="emit('positive')">{{ t('more.yes') }}</Button>
-                <Button type="danger" @click.stop="emit('negative')">{{ t('more.no') }}</Button>
+                <Button @click.stop="emit('positive')">{{ positiveLabel || t('more.yes') }}</Button>
+                <Button type="danger" @click.stop="emit('negative')">{{ negativeLabel || t('more.no') }}</Button>
             </div>
         </div>
     </div>
