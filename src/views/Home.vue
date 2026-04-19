@@ -1,10 +1,12 @@
 <script setup lang="ts">
-    import { computed, onMounted, ref } from 'vue';
+    import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
     import { useRouter } from 'vue-router';
     import { Icon } from '@iconify/vue';
     import { useI18n } from 'vue-i18n';
     import { useTowerProgress } from '../stores/useTowerProgress';
+    import { useGameFile } from '../stores/useGameFile';
     import { useGameStore } from '../stores/useGameState';
+    import { isTauriRuntime } from '../utils/dataStorage';
     import type { TowerLevelState } from '../stores/useTowerProgress';
     import { loadTowerLevels, toTowerLevelNumber, getTowerLevelCount } from '../utils/towerLevels';
     //components
@@ -18,6 +20,7 @@
     const router = useRouter();
     const towerProgress = useTowerProgress();
     const gameStore = useGameStore();
+    const gameFile = useGameFile();
 
     const modalVisible = ref(false);
     const settingsVisible = ref(false);
@@ -25,6 +28,8 @@
     const customNullCells = ref(35);
     const hasSavedQuickGame = ref(false);
     const savedQuickDifficulty = ref<'easy' | 'medium' | 'hard' | null>(null);
+    let quickSaveWatcher: ReturnType<typeof setInterval> | null = null;
+    let isSyncingQuickSave = false;
 
     const customDifficultyInfo = computed(() => {
         const n = customNullCells.value;
@@ -115,11 +120,55 @@
         return { label: t('towerPlay.hard'), color: 'bg-red-500', bars: 3 };
     }
 
+    async function syncQuickContinueState() {
+        if (isSyncingQuickSave) return;
+        isSyncingQuickSave = true;
+        try {
+            if (isTauriRuntime()) {
+                const fileState = await gameFile.loadGame();
+                hasSavedQuickGame.value = fileState !== null;
+                savedQuickDifficulty.value = fileState?.gameDifficulty ?? null;
+                return;
+            }
+
+            const hasSave = await gameStore.loadGame();
+            hasSavedQuickGame.value = hasSave;
+            savedQuickDifficulty.value = hasSave ? gameStore.gameDifficulty : null;
+        } finally {
+            isSyncingQuickSave = false;
+        }
+    }
+
+    function handleWindowFocus() {
+        void syncQuickContinueState();
+    }
+
+    function handleVisibilityChange() {
+        if (!document.hidden) {
+            void syncQuickContinueState();
+        }
+    }
+
     onMounted(async () => {
-        const hasSave = await gameStore.loadGame();
-        hasSavedQuickGame.value = hasSave;
-        savedQuickDifficulty.value = hasSave ? gameStore.gameDifficulty : null;
+        await syncQuickContinueState();
         await towerProgress.loadFromFile();
+
+        if (isTauriRuntime()) {
+            window.addEventListener('focus', handleWindowFocus);
+            document.addEventListener('visibilitychange', handleVisibilityChange);
+            quickSaveWatcher = setInterval(() => {
+                void syncQuickContinueState();
+            }, 1000);
+        }
+    });
+
+    onBeforeUnmount(() => {
+        if (quickSaveWatcher !== null) {
+            clearInterval(quickSaveWatcher);
+            quickSaveWatcher = null;
+        }
+        window.removeEventListener('focus', handleWindowFocus);
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
     });
 </script>
 
