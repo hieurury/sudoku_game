@@ -349,6 +349,7 @@ onMounted(async () => {
     loadSound('target', '/sounds/target.mp3');
     loadSound('gameOver', '/sounds/game_over.mp3');
     loadSound('gameWin', '/sounds/game_win.mp3');
+    await towerProgress.loadFromFile();
 
     // check if resuming same level
     const lp = towerProgress.lastPlayed;

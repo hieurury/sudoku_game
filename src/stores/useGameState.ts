@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { useGameFile } from './useGameFile';
+import { isTauriRuntime } from '../utils/dataStorage';
 
 const gameFile = useGameFile();
 
@@ -87,6 +88,10 @@ export const useGameStore = defineStore('game', {
                 gameDifficulty: this.gameDifficulty
             };
             gameFile.saveGame(gameState);
+            if (isTauriRuntime()) {
+                localStorage.removeItem(STORAGE_KEY);
+                return;
+            }
             localStorage.setItem(STORAGE_KEY, JSON.stringify(gameState));
         },
 
@@ -101,8 +106,16 @@ export const useGameStore = defineStore('game', {
                 this.canInvalid = fileState.canInvalid;
                 this.invalidCount = fileState.invalidCount;
                 this.gameDifficulty = fileState.gameDifficulty ?? 'easy';
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(fileState));
+                if (isTauriRuntime()) {
+                    localStorage.removeItem(STORAGE_KEY);
+                } else {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(fileState));
+                }
                 return true;
+            }
+            if (isTauriRuntime()) {
+                localStorage.removeItem(STORAGE_KEY);
+                return false;
             }
             const saved = localStorage.getItem(STORAGE_KEY);
             if (saved) {

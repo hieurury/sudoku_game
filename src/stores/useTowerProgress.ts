@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { writeDataFile, readDataFile } from '../utils/dataStorage';
+import { writeDataFile, readDataFile, isTauriRuntime } from '../utils/dataStorage';
 
 const STORAGE_KEY = 'sudoku_tower_progress';
 const FILE_NAME = 'tower_progress.json';
@@ -64,6 +64,9 @@ function normalizeCompletedLevels(
 
 export const useTowerProgress = defineStore('towerProgress', {
   state: (): TowerProgressState => {
+    if (isTauriRuntime()) {
+      return defaultState();
+    }
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       try {
@@ -90,24 +93,31 @@ export const useTowerProgress = defineStore('towerProgress', {
         totalFailures: this.totalFailures,
         totalPlayTime: this.totalPlayTime,
       };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-      // also persist to Tauri file
+      if (isTauriRuntime()) {
+        localStorage.removeItem(STORAGE_KEY);
+      } else {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      }
       writeDataFile(FILE_NAME, JSON.stringify(data)).catch(() => {});
     },
 
     async loadFromFile() {
+      if (!isTauriRuntime()) return;
       try {
         const content = await readDataFile(FILE_NAME);
-        if (!content) return;
+        if (!content) {
+          localStorage.removeItem(STORAGE_KEY);
+          return;
+        }
         const data = JSON.parse(content) as TowerProgressState;
         this.completedLevels = normalizeCompletedLevels(data.completedLevels);
         this.lastPlayed = data.lastPlayed ?? null;
         this.totalPlays = data.totalPlays ?? 0;
         this.totalFailures = data.totalFailures ?? 0;
         this.totalPlayTime = data.totalPlayTime ?? 0;
-        this._persist();
+        localStorage.removeItem(STORAGE_KEY);
       } catch {
-        // file doesn't exist yet, use localStorage state
+        localStorage.removeItem(STORAGE_KEY);
       }
     },
 

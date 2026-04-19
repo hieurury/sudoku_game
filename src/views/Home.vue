@@ -1,5 +1,5 @@
 <script setup lang="ts">
-    import { computed, ref } from 'vue';
+    import { computed, onMounted, ref } from 'vue';
     import { useRouter } from 'vue-router';
     import { Icon } from '@iconify/vue';
     import { useI18n } from 'vue-i18n';
@@ -23,6 +23,8 @@
     const settingsVisible = ref(false);
     const showCustomPanel = ref(false);
     const customNullCells = ref(35);
+    const hasSavedQuickGame = ref(false);
+    const savedQuickDifficulty = ref<'easy' | 'medium' | 'hard' | null>(null);
 
     const customDifficultyInfo = computed(() => {
         const n = customNullCells.value;
@@ -31,16 +33,11 @@
         return { label: 'HARD', color: 'text-red-500', bar: 'bg-red-500', pct: Math.round((n / 50) * 100) };
     });
 
-    const gameDifficulty = computed(() => {
-        const gameState = localStorage.getItem('sudoku_game_state');
-        if (!gameState) return null;
-        return JSON.parse(gameState).gameDifficulty;
-    });
     const continueGameBtn = computed(() => {
-        return !!localStorage.getItem('sudoku_game_state');
+        return hasSavedQuickGame.value;
     });
     const continueBadge = computed(() => {
-        const d = gameDifficulty.value;
+        const d = savedQuickDifficulty.value;
         if (d === 'easy')   return { title: t('home.modal.easy.title'),   theme: 'success' as const };
         if (d === 'medium') return { title: t('home.modal.medium.title'), theme: 'warning' as const };
         if (d === 'hard')   return { title: t('home.modal.hard.title'),   theme: 'danger'  as const };
@@ -49,12 +46,14 @@
 
     function startNewGame() {
         gameStore.clearGameState();
+        hasSavedQuickGame.value = false;
+        savedQuickDifficulty.value = null;
         showCustomPanel.value = false;
         modalVisible.value = true;
     }
     function continueGame() {
-        if (gameDifficulty.value) {
-            router.push(`/quick-play?difficulty=${gameDifficulty.value}`);
+        if (savedQuickDifficulty.value) {
+            router.push(`/quick-play?difficulty=${savedQuickDifficulty.value}`);
         }
     }
     function startCustomGame() {
@@ -115,6 +114,13 @@
         }
         return { label: t('towerPlay.hard'), color: 'bg-red-500', bars: 3 };
     }
+
+    onMounted(async () => {
+        const hasSave = await gameStore.loadGame();
+        hasSavedQuickGame.value = hasSave;
+        savedQuickDifficulty.value = hasSave ? gameStore.gameDifficulty : null;
+        await towerProgress.loadFromFile();
+    });
 </script>
 
 <template>

@@ -17,9 +17,11 @@ import SettingsModal from '../components/partials/SettingsModal.vue';
 const { t } = useI18n();
 
 const gameStore = useGameStore();
-const { gameBoard, playerBoard, currentFocus, cellStatus } = storeToRefs(gameStore);
+const { gameBoard, playerBoard, currentFocus, cellStatus, _solutionBoard } = storeToRefs(gameStore);
 const router = useRouter();
 const route = useRoute();
+const boardSize = 9;
+const totalCells = boardSize * boardSize;
 
 // const isWin = ref<boolean>(false);
 const caninvalid = ref<number>(0);
@@ -36,6 +38,9 @@ const popupPositive = ref<() => void>(() => {});
 const popupNegative = ref<() => void>(() => {});
 const popupPositiveLabel = ref<string | undefined>(undefined);
 const popupNegativeLabel = ref<string | undefined>(undefined);
+const showResultBoard = ref<boolean>(false);
+const revealCursor = ref<number>(-1);
+let revealInterval: ReturnType<typeof setInterval> | null = null;
 //settings
 const settingsVisible = ref<boolean>(false);
 //game settings
@@ -91,9 +96,12 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
     document.removeEventListener('click', handleDocumentClick, true);
+    stopResultAnimation();
 });
 
 function newGame() {
+    stopResultAnimation();
+    showResultBoard.value = false;
     resetFocus();
     runWithLoading(() => {
         if (isCustomMode.value) {
@@ -157,9 +165,77 @@ function resetFocus() {
     loadGameCounter();
 }
 
+function stopResultAnimation() {
+    if (revealInterval !== null) {
+        clearInterval(revealInterval);
+        revealInterval = null;
+    }
+}
+
+function startResultBoardAnimation() {
+    showResultBoard.value = true;
+    stopResultAnimation();
+    revealCursor.value = -1;
+
+    revealInterval = setInterval(() => {
+        revealCursor.value += 1;
+        if (revealCursor.value >= totalCells - 1) {
+            stopResultAnimation();
+        }
+    }, 26);
+}
+
+function getCellPosition(cellIndex: number): { row: number; col: number } {
+    return {
+        row: Math.floor(cellIndex / boardSize),
+        col: cellIndex % boardSize,
+    };
+}
+
+function isOriginalEmptyCell(cellIndex: number): boolean {
+    const { row, col } = getCellPosition(cellIndex);
+    return (gameBoard.value[row]?.[col] ?? 0) === 0;
+}
+
+function isRevealPassed(cellIndex: number): boolean {
+    return revealCursor.value >= cellIndex;
+}
+
+function getResultCellValue(cellIndex: number): number | string {
+    const { row, col } = getCellPosition(cellIndex);
+    const initialValue = gameBoard.value[row]?.[col] ?? 0;
+    if (initialValue !== 0) {
+        return initialValue;
+    }
+
+    if (!isRevealPassed(cellIndex)) {
+        const playerValue = playerBoard.value[row]?.[col] ?? 0;
+        return playerValue === 0 ? '' : playerValue;
+    }
+
+    const solutionValue = _solutionBoard.value[row]?.[col] ?? 0;
+    return solutionValue === 0 ? '' : solutionValue;
+}
+
+function isRevealedCellCorrect(cellIndex: number): boolean {
+    if (!isOriginalEmptyCell(cellIndex) || !isRevealPassed(cellIndex)) {
+        return true;
+    }
+
+    const { row, col } = getCellPosition(cellIndex);
+    const playerValue = playerBoard.value[row]?.[col] ?? 0;
+    const solutionValue = _solutionBoard.value[row]?.[col] ?? 0;
+    return playerValue !== 0 && playerValue === solutionValue;
+}
+
+function isScanningCell(cellIndex: number): boolean {
+    return revealCursor.value === cellIndex;
+}
+
 //lúc win
 function handleWin() {
     gameStore.clearFocus();
+    startResultBoardAnimation();
     popupTitle.value = t('quickPlay.popup.congrats');
     popupDescription.value = t('quickPlay.popup.congratsDesc');
     popupPositive.value = newGame;
@@ -176,6 +252,7 @@ function handleWin() {
 //lúc thua
 function handleLose() {
     gameStore.clearFocus();
+    startResultBoardAnimation();
     popupTitle.value = t('quickPlay.popup.gameOver');
     popupDescription.value = t('quickPlay.popup.gameOverDesc');
     popupPositive.value = newGame;
@@ -191,6 +268,8 @@ function handleLose() {
 
 //hiện popup
 function handlePopup() {
+    stopResultAnimation();
+    showResultBoard.value = false;
     popupTitle.value = t('quickPlay.popup.confirm');
     popupDescription.value = t('quickPlay.popup.confirmDesc');
     popupPositive.value = newGame;
@@ -202,6 +281,8 @@ function handlePopup() {
 
 //thoát game
 function handleExit() {
+    stopResultAnimation();
+    showResultBoard.value = false;
     popupTitle.value = t('quickPlay.popup.exit');
     popupDescription.value = t('quickPlay.popup.exitDesc');
     popupPositive.value = () => { router.push('/'); };
@@ -236,9 +317,32 @@ watch(currentFocus, (newVal) => {
     :description="popupDescription"
     :positive-label="popupPositiveLabel"
     :negative-label="popupNegativeLabel"
+    :split-layout="showResultBoard"
     @positive="popupPositive"
     @negative="popupNegative"
-    />
+    >
+        <div v-if="showResultBoard" class="w-full mt-2">
+            <div class="grid grid-cols-9 grid-rows-9 border-2 border-emerald-700 dark:border-emerald-300 w-full max-w-60 mx-auto">
+                <div
+                    v-for="i in totalCells"
+                    :key="`result-${i}`"
+                    :class="[
+                        {
+                            'border-r-2 border-r-emerald-700 dark:border-r-emerald-300': [2, 5].includes((i - 1) % boardSize),
+                            'border-b-2 border-b-emerald-700 dark:border-b-emerald-300': [2, 5].includes(Math.floor((i - 1) / boardSize)),
+                            'bg-emerald-500/90 text-white': isOriginalEmptyCell(i - 1) && isRevealPassed(i - 1) && isRevealedCellCorrect(i - 1),
+                            'bg-red-500/90 text-white': isOriginalEmptyCell(i - 1) && isRevealPassed(i - 1) && !isRevealedCellCorrect(i - 1),
+                            'bg-gray-100 dark:bg-gray-900 text-gray-700 dark:text-gray-200': !isOriginalEmptyCell(i - 1) || !isRevealPassed(i - 1),
+                            'result-scanner-cell': isOriginalEmptyCell(i - 1) && isScanningCell(i - 1),
+                        },
+                        'aspect-square border border-gray-300 dark:border-gray-500 flex items-center justify-center text-base font-semibold transition-all duration-150',
+                    ]"
+                >
+                    {{ getResultCellValue(i - 1) }}
+                </div>
+            </div>
+        </div>
+    </Popup>
     <SettingsModal v-if="settingsVisible" @close="settingsVisible = false" />
     <!-- Top-right action buttons -->
     <div class="fixed top-4 right-4 z-50 flex items-center gap-2">
@@ -362,4 +466,19 @@ watch(currentFocus, (newVal) => {
 </template>
 
 <style scoped>
+.result-scanner-cell {
+    animation: resultScanPulse 0.45s ease-in-out;
+}
+
+@keyframes resultScanPulse {
+    0% {
+        box-shadow: inset 0 0 0 0 rgba(34, 211, 238, 0.8);
+    }
+    50% {
+        box-shadow: inset 0 0 0 999px rgba(34, 211, 238, 0.18);
+    }
+    100% {
+        box-shadow: inset 0 0 0 0 rgba(34, 211, 238, 0);
+    }
+}
 </style>
